@@ -1,4 +1,5 @@
-﻿using FunBooksAndVideos.API.Models;
+﻿using FluentValidation;
+using FunBooksAndVideos.API.Models;
 using FunBooksAndVideos.Application.Interfaces;
 using FunBooksAndVideos.Domain;
 using FunBooksAndVideos.Infrastructure.Interfaces;
@@ -12,34 +13,33 @@ namespace FunBooksAndVideos.API.Controllers
     {
         private readonly IPurchaseOrderProcessor _orderProcessor;
         private readonly IPurchaseOrderRepository _orderRepository;
-        private readonly ICustomerMembershipService _customerService;
+        private readonly IValidator<CreatePurchaseOrderRequest> _validator;
 
         public PurchaseOrderController(
             IPurchaseOrderProcessor orderProcessor,
             IPurchaseOrderRepository orderRepository,
-            ICustomerMembershipService customerService)
+            IValidator<CreatePurchaseOrderRequest> validator
+        )
         {
             _orderProcessor = orderProcessor;
             _orderRepository = orderRepository;
-            _customerService = customerService;
+            _validator = validator;
         }
 
         [HttpPost]
         public async Task<IActionResult> CreatePurchaseOrder([FromBody] CreatePurchaseOrderRequest request)
         {
-            if (request == null)
+            var validationResult = await _validator.ValidateAsync(request);
+            if (!validationResult.IsValid)
             {
-                return BadRequest(new { error = "Request cannot be null" });
-            }
+                var errors = validationResult.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(e => e.ErrorMessage).ToArray()
+                    );
 
-            if (!_customerService.CustomerExists(request.CustomerId))
-            {
-                return NotFound(new { error = $"Customer with ID {request.CustomerId} not found" });
-            }
-
-            if (request.Items == null || request.Items.Count == 0)
-            {
-                return BadRequest(new { error = "Order must contain at least one item" });
+                return BadRequest(new { errors });
             }
 
             var order = new PurchaseOrder(request.Id, request.CustomerId);
@@ -52,38 +52,19 @@ namespace FunBooksAndVideos.API.Controllers
                     UnitPrice = item.UnitPrice
                 };
 
-                if (item.ProductId.HasValue)
-                {
-                    if (!_orderRepository.ProductExists(item.ProductId.Value))
-                    {
-                        return BadRequest(new { error = $"Product with ID {item.ProductId.Value} not found" });
-                    }
+                var product = await _orderRepository.GetProductByIdAsync(item.ProductId.GetValueOrDefault());
+                itemLine.Product = product;
 
-                    var product = await _orderRepository.GetProductByIdAsync(item.ProductId.Value);
-                    itemLine.Product = product;
-                }
-                else if (!string.IsNullOrEmpty(item.MembershipType))
-                {
-                    if (!Enum.TryParse<MembershipType>(item.MembershipType, true, out var membershipType))
-                    {
-                        return BadRequest(new { error = $"Invalid membership type: {item.MembershipType}" });
-                    }
-                    itemLine.MembershipType = membershipType;
-                }
-                else
-                {
-                    return BadRequest(new { error = "Each item must have either a ProductId or MembershipType" });
-                }
+                Enum.TryParse<MembershipType>(item.MembershipType, true, out var membershipType);
+                itemLine.MembershipType = membershipType;
 
                 order.ItemLines.Add(itemLine);
             }
 
             try
             {
-                // Process the order
                 _orderProcessor.ProcessPurchaseOrder(order);
 
-                // Save the order
                 await _orderRepository.SavePurchaseOrderAsync(order);
 
                 return Ok(new
@@ -102,7 +83,7 @@ namespace FunBooksAndVideos.API.Controllers
             {
                 return BadRequest(new { error = ex.Message });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new { error = "An error occurred processing your order", details = ex.Message });
             }
