@@ -14,8 +14,8 @@ namespace FunBooksAndVideos.API.Controllers
         ) : ControllerBase
     {
         [HttpPost]
-        [ServiceFilter(typeof(ValidationFilter<CreatePurchaseOrderRequest>))]
-        public async Task<IActionResult> CreatePurchaseOrder([FromBody] CreatePurchaseOrderRequest request)
+        [ServiceFilter(typeof(ValidationFilter<PurchaseOrderRequest>))]
+        public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderRequest request)
         {
             var order = await orderProcessor.ProcessPurchaseOrderAsync(request);
 

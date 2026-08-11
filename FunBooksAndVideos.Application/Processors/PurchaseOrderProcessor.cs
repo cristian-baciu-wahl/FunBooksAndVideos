@@ -11,7 +11,7 @@ public class PurchaseOrderProcessor(IBusinessRuleEngine ruleEngine, IPurchaseOrd
 {
     private readonly IBusinessRuleEngine _ruleEngine = ruleEngine;
 
-    public async Task<PurchaseOrder> ProcessPurchaseOrderAsync(CreatePurchaseOrderRequest request)
+    public async Task<PurchaseOrder> ProcessPurchaseOrderAsync(PurchaseOrderRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 

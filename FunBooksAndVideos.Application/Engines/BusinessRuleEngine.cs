@@ -4,11 +4,18 @@ using Microsoft.Extensions.Logging;
 
 namespace FunBooksAndVideos.Application.Engines;
 
-public class BusinessRuleEngine(ILogger<BusinessRuleEngine> logger) : IBusinessRuleEngine
+public class BusinessRuleEngine : IBusinessRuleEngine
 {
     private readonly List<IBusinessRule> _rules = [];
-    private readonly ILogger<BusinessRuleEngine> _logger = logger;
+    private readonly ILogger<BusinessRuleEngine> _logger;
 
+    public BusinessRuleEngine(
+        ILogger<BusinessRuleEngine> logger, 
+        IEnumerable<IBusinessRule> rules)
+    {
+        _logger = logger;
+        _rules.AddRange(rules);
+    }
     public void AddRule(IBusinessRule rule)
     {
         ArgumentNullException.ThrowIfNull(rule);

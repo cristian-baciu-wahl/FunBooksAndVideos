@@ -23,8 +23,8 @@ builder.Services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 
 // Register all validators and filters
-builder.Services.AddValidatorsFromAssemblyContaining<CreatePurchaseOrderRequestValidator>();
-builder.Services.AddScoped<ValidationFilter<CreatePurchaseOrderRequest>>();
+builder.Services.AddValidatorsFromAssemblyContaining<PurchaseOrderRequestValidator>();
+builder.Services.AddScoped<ValidationFilter<PurchaseOrderRequest>>();
 
 // Register rule engine
 builder.Services.AddScoped<IBusinessRuleEngine, BusinessRuleEngine>();

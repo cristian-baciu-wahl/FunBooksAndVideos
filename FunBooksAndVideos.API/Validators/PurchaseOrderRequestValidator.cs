@@ -4,10 +4,9 @@ using FunBooksAndVideos.Domain;
 
 namespace FunBooksAndVideos.API.Validators;
 
-public class CreatePurchaseOrderRequestValidator
-    : AbstractValidator<CreatePurchaseOrderRequest>
+public class PurchaseOrderRequestValidator: AbstractValidator<PurchaseOrderRequest>
 {
-    public CreatePurchaseOrderRequestValidator()
+    public PurchaseOrderRequestValidator()
     {
         RuleFor(x => x.Id)
             .GreaterThan(0)

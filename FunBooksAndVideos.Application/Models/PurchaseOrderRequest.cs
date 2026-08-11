@@ -1,6 +1,6 @@
 ﻿namespace FunBooksAndVideos.Application.Models;
 
-public class CreatePurchaseOrderRequest
+public class PurchaseOrderRequest
 {
     public int Id { get; set; }
 

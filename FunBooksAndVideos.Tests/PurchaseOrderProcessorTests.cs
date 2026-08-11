@@ -18,7 +18,7 @@ public class PurchaseOrderProcessorTests
 
     public PurchaseOrderProcessorTests()
     {
-        var engine = new BusinessRuleEngine(Mock.Of<ILogger<BusinessRuleEngine>>());
+        var engine = new BusinessRuleEngine(Mock.Of<ILogger<BusinessRuleEngine>>(), []);
         engine.AddRule(new ActivateMembershipRule(_membership.Object));
         engine.AddRule(new GenerateShippingSlipRule(_shipping.Object));
         _sut = new PurchaseOrderProcessor(engine, _repo.Object);
@@ -26,7 +26,7 @@ public class PurchaseOrderProcessorTests
 
     [Theory]
     [MemberData(nameof(TestScenarios))]
-    public async Task ProcessPurchaseOrderAsync_AppliesRules(CreatePurchaseOrderRequest request, bool expectMembership, bool expectShipping)
+    public async Task ProcessPurchaseOrderAsync_AppliesRules(PurchaseOrderRequest request, bool expectMembership, bool expectShipping)
     {
         // Arrange
         SetupRepo(request);
@@ -81,14 +81,14 @@ public class PurchaseOrderProcessorTests
 
     // helper for building requests moved to CreateRequest; synchronous PurchaseOrder builders removed
 
-    private void SetupRepo(CreatePurchaseOrderRequest request)
+    private void SetupRepo(PurchaseOrderRequest request)
     {
         foreach (var item in request.Items.Where(x => x.ProductId.HasValue))
             _repo.Setup(x => x.GetProductByIdAsync(item.ProductId.Value))
                 .ReturnsAsync(new Book { Name = "Test", Isbn = "00000000", Author = "Allan Joe", Id = 1 });
     }
 
-    public static TheoryData<CreatePurchaseOrderRequest, bool, bool> TestScenarios() => new()
+    public static TheoryData<PurchaseOrderRequest, bool, bool> TestScenarios() => new()
     {
         { CreateRequest(MembershipType.BookClub, false), true, false },
         { CreateRequest(null, true), false, true },
@@ -96,13 +96,13 @@ public class PurchaseOrderProcessorTests
         { CreateRequest(null, false), false, false }
     };
 
-    private static CreatePurchaseOrderRequest CreateRequest(MembershipType? membership, bool hasPhysical)
+    private static PurchaseOrderRequest CreateRequest(MembershipType? membership, bool hasPhysical)
     {
         var items = new List<OrderItemRequest>();
         if (membership.HasValue)
             items.Add(new OrderItemRequest { MembershipType = membership.ToString(), Quantity = 1 });
         if (hasPhysical)
             items.Add(new OrderItemRequest { ProductId = 1, Quantity = 1, UnitPrice = 14.99m });
-        return new CreatePurchaseOrderRequest { Id = 1, CustomerId = 12345, Items = items };
+        return new PurchaseOrderRequest { Id = 1, CustomerId = 12345, Items = items };
     }
 }
