@@ -1,8 +1,15 @@
 <Solution>
   <Folder Name="/Documentation/">
     <File Path="DockerCommands.txt" />
+    <File Path="EF_Commands.txt" />
     <File Path="FunBooksAndVideos API Tests.json" />
     <File Path="README.txt" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".env" />
+    <File Path=".env.example" />
+    <File Path=".gitignore" />
+    <File Path="docker-compose.yml" />
   </Folder>
   <Project Path="FunBooksAndVideos.API/FunBooksAndVideos.API.csproj" />
   <Project Path="FunBooksAndVideos.Application/FunBooksAndVideos.Application.csproj" />

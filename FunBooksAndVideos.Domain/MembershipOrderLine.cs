@@ -1,4 +1,4 @@
-﻿using FunBooksAndVideos.Domain;
+﻿namespace FunBooksAndVideos.Domain;
 
 public sealed class MembershipOrderLine : PurchaseOrderLine
 {

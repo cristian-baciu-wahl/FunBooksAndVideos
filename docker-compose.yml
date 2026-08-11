@@ -1,0 +1,88 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: funbooks-sqlserver
+
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQLSERVER_SA_PASSWORD}
+
+    ports:
+      - "1433:1433"
+
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  migrator:
+    build:
+      context: .
+      dockerfile: FunBooksAndVideos.API/Dockerfile
+      target: build
+
+    container_name: funbooks-migrator
+
+    working_dir: /src
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__FunBooksAndVideos: >-
+        Server=sqlserver,1433;
+        Database=FunBooksAndVideos;
+        User Id=sa;
+        Password=${SQLSERVER_SA_PASSWORD};
+        TrustServerCertificate=True
+
+    command:
+      [
+        "dotnet",
+        "ef",
+        "database",
+        "update",
+        "--project",
+        "FunBooksAndVideos.Infrastructure",
+        "--startup-project",
+        "FunBooksAndVideos.API"
+      ]
+
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: FunBooksAndVideos.API/Dockerfile
+
+    container_name: funbooks-api
+
+    ports:
+      - "5000:5000"
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__FunBooksAndVideos: >-
+        Server=sqlserver,1433;
+        Database=FunBooksAndVideos;
+        User Id=sa;
+        Password=${SQLSERVER_SA_PASSWORD};
+        TrustServerCertificate=True
+
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+
+volumes:
+  sqlserver-data:
+    name: funbooksandvideos_sqlserver-data

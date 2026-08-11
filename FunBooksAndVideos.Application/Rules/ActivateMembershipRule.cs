@@ -1,4 +1,6 @@
-﻿using FunBooksAndVideos.Application.Interfaces;
+﻿
+using FunBooksAndVideos.Application.Interfaces;
+using FunBooksAndVideos.Domain;
 
 namespace FunBooksAndVideos.Application.Rules;
 

@@ -1,6 +1,4 @@
-﻿
-//another way of representing namespaces
-using FunBooksAndVideos.Domain;
+﻿namespace FunBooksAndVideos.Domain;
 
 public sealed class PurchaseOrder(int id, int customerId)
 {

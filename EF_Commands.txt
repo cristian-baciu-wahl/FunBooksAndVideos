@@ -1,0 +1,6 @@
+
+// Adds initial migration to the project
+dotnet ef migrations add InitialCreate --project FunBooksAndVideos.Infrastructure --startup-project FunBooksAndVideos.API
+
+// Apply migrations sequentially to the database
+dotnet ef database update --project FunBooksAndVideos.Infrastructure --startup-project FunBooksAndVideos.API

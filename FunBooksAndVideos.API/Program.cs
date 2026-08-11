@@ -9,6 +9,9 @@ using FunBooksAndVideos.Application.Models;
 using FunBooksAndVideos.Application.Processors;
 using FunBooksAndVideos.Application.Services;
 using FunBooksAndVideos.Infrastructure.Repositories;
+using FunBooksAndVideos.Infrastructure.Persistence;
+using FunBooksAndVideos.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,9 +23,12 @@ builder.Services.AddSwaggerGen();
 // Register core services
 builder.Services.AddScoped<IShippingSlipService, ShippingSlipService>();
 
-//non-durable persistence, until app starts - for production, we would use a DB 
-builder.Services.AddSingleton<ICustomerMembershipService, CustomerMembershipService>();
-builder.Services.AddSingleton<IPurchaseOrderRepository, PurchaseOrderRepository>();    
+////non-durable persistence, until app starts - for production, we would use a DB 
+//builder.Services.AddSingleton<ICustomerMembershipService, CustomerMembershipService>();
+//builder.Services.AddSingleton<IPurchaseOrderRepository, PurchaseOrderRepository>();    
+
+builder.Services.AddScoped<ICustomerMembershipService, EfCustomerMembershipService>();
+builder.Services.AddScoped<IPurchaseOrderRepository, EfPurchaseOrderRepository>();
 
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 
@@ -43,8 +49,8 @@ builder.Services.AddScoped<IPurchaseOrderProcessor, PurchaseOrderProcessor>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-// Add framework health check 
-builder.Services.AddHealthChecks();
+// Add framework health check for API -> AppDbContext -> SQL Server
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
 
 // Configure CORS to Allow All - for production apps, we want to limit this 
 builder.Services.AddCors(options =>
@@ -57,6 +63,15 @@ builder.Services.AddCors(options =>
                    .AllowAnyHeader();
         });
 });
+
+// Add DB context and connection string
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddUserSecrets<Program>();
+}
+
+var connectionString = builder.Configuration.GetConnectionString("FunBooksAndVideos");
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
 var app = builder.Build();
 

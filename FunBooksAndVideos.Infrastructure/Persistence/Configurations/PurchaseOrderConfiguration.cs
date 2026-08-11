@@ -1,0 +1,39 @@
+﻿using FunBooksAndVideos.Domain;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace FunBooksAndVideos.Infrastructure.Persistence.Configurations;
+
+public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<PurchaseOrder>
+{
+    public void Configure(EntityTypeBuilder<PurchaseOrder> builder)
+    {
+        builder.ToTable("PurchaseOrders");
+
+        builder.HasKey(order => order.Id);
+
+        // The API supplies the purchase-order ID.
+        builder.Property(order => order.Id)
+            .ValueGeneratedNever();
+
+        builder.Property(order => order.CustomerId)
+            .IsRequired();
+
+        builder.Property(order => order.OrderDate)
+            .IsRequired();
+
+        // Calculated in the domain; do not persist it.
+        builder.Ignore(order => order.TotalPrice);
+
+        builder.HasOne<Customer>()
+            .WithMany()
+            .HasForeignKey(order => order.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(order => order.ItemLines)
+            .WithOne()
+            .HasForeignKey("PurchaseOrderId")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
