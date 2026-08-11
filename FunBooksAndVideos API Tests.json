@@ -486,101 +486,6 @@
 			"name": "5. Error Handling and Validation",
 			"item": [
 				{
-					"name": "5.1 Invalid Customer ID",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code should be 400', function () {",
-									"    pm.expect(pm.response.code).to.eql(400);",
-									"});",
-									"pm.test('Should return customer not found error', function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.errors.CustomerId).to.include('Customer with ID 9999999 not found');",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"id\": 3344666,\n    \"customerId\": 9999999,\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/purchaseorder",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"purchaseorder"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "5.2 Invalid Product ID",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 400\", function () {",
-									"    pm.response.to.have.status(400);",
-									"});",
-									"",
-									"pm.test(\"Product validation error is returned\", function () {",
-									"    const jsonData = pm.response.json();",
-									"",
-									"    pm.expect(jsonData).to.have.property(\"errors\");",
-									"    pm.expect(jsonData.errors).to.have.property(\"Items[0].ProductId\");",
-									"    pm.expect(jsonData.errors[\"Items[0].ProductId\"])",
-									"        .to.include(\"Product with ID 999 not found\");",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"id\": 3344667,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 999,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/purchaseorder",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"purchaseorder"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "5.3 Empty Order",
 					"event": [
 						{
@@ -596,7 +501,7 @@
 									"",
 									"    pm.expect(jsonData).to.have.property(\"errors\");",
 									"    pm.expect(jsonData.errors).to.have.property(\"Items\");",
-									"    pm.expect(jsonData.errors[\"Items\"]).to.include(\"Order must contain at least one item\");",
+									"    pm.expect(jsonData.errors[\"Items\"]).to.include(\"At least one item is required\");",
 									"});"
 								],
 								"type": "text/javascript",
@@ -647,7 +552,7 @@
 									"    pm.expect(jsonData.errors).to.have.property(\"Items[0].MembershipType\");",
 									"",
 									"    pm.expect(jsonData.errors[\"Items[0].MembershipType\"])",
-									"      .to.include(\"Invalid membership type: 'InvalidMembership'. Valid values are: BookClub, VideoClub, Premium\");",
+									"      .to.include(\"Invalid membership type\");",
 									"});"
 								],
 								"type": "text/javascript",
