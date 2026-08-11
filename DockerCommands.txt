@@ -10,3 +10,6 @@ docker run -d -p 5000:5000 --name funbooksandvideos-api funbooksandvideos-api
 
 # Check logs
 docker logs funbooksandvideos-api
+
+# Health check 
+curl http://localhost:5000/health

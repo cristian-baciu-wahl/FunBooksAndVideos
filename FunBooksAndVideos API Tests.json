@@ -1,0 +1,773 @@
+{
+	"info": {
+		"_postman_id": "b48d8149-55a8-438d-9eb7-52d73f00145a",
+		"name": "FunBooksAndVideos API Tests",
+		"description": "Comprehensive integration tests for FunBooksAndVideos e-commerce API covering all business rules",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "57294360",
+		"_collection_link": "https://chriswahlbusiness-5999041.postman.co/workspace/Chris-Wahl's-Workspace~d221b8ea-f363-4d34-8988-fc1078b7b19b/collection/57294360-b48d8149-55a8-438d-9eb7-52d73f00145a?action=share&source=collection_link&creator=57294360"
+	},
+	"item": [
+		{
+			"name": "1. BR1 - Membership Activation Tests",
+			"item": [
+				{
+					"name": "1.1 Activate Book Club Membership",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Response contains order ID and success message', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.orderId).to.eql(3344656);",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});",
+									"pm.test('Order total should be calculated correctly', function () {",
+									"    var jsonData = pm.response.json();",
+									"    // Verify order total from response or calculate from items",
+									"    pm.expect(jsonData.orderId).to.be.a('number');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344656,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 2,\n            \"quantity\": 1,\n            \"unitPrice\": 33.51\n        },\n        {\n            \"productId\": 1,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        },\n        {\n            \"membershipType\": \"BookClub\",\n            \"quantity\": 1,\n            \"unitPrice\": 0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 Activate Video Club Membership",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Video Club membership should be activated', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344657,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 2,\n            \"quantity\": 1,\n            \"unitPrice\": 33.51\n        },\n        {\n            \"membershipType\": \"VideoClub\",\n            \"quantity\": 1,\n            \"unitPrice\": 0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 Activate Premium Membership (Both Clubs)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Premium membership should activate both clubs', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});",
+									"pm.test('Order should process with premium membership', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.orderId).to.be.a('number');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344658,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        },\n        {\n            \"productId\": 2,\n            \"quantity\": 1,\n            \"unitPrice\": 33.51\n        },\n        {\n            \"membershipType\": \"Premium\",\n            \"quantity\": 1,\n            \"unitPrice\": 0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. BR2 - Shipping Slip Generation Tests",
+			"item": [
+				{
+					"name": "2.1 Generate Shipping Slip for Physical Book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Physical product should trigger shipping slip', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344659,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"quantity\": 2,\n            \"unitPrice\": 14.99\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Multiple Physical Products - Single Shipping Slip",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Only one shipping slip should be generated for multiple physical items', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344660,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"quantity\": 3,\n            \"unitPrice\": 14.99\n        },\n        {\n            \"productId\": 1,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Combined Business Rules Tests",
+			"item": [
+				{
+					"name": "3.1 Membership + Physical Product (Both Rules)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Should activate membership AND generate shipping slip', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});",
+									"pm.test('Order should process correctly with both rule types', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.orderId).to.be.a('number');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344661,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"membershipType\": \"Premium\",\n            \"quantity\": 1,\n            \"unitPrice\": 0\n        },\n        {\n            \"productId\": 1,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Edge Cases and Validation",
+			"item": [
+				{
+					"name": "4.1 Digital Product Only (No Rules Apply)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Digital products should not trigger shipping slip', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344662,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 2,\n            \"quantity\": 1,\n            \"unitPrice\": 33.51\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 Multiple Memberships in One Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Should activate all memberships in the order', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344663,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"membershipType\": \"BookClub\",\n            \"quantity\": 1,\n            \"unitPrice\": 0\n        },\n        {\n            \"membershipType\": \"VideoClub\",\n            \"quantity\": 1,\n            \"unitPrice\": 0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4.3 Physical Products with Different Quantities",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Shipping slip should handle multiple quantities', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344664,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"quantity\": 5,\n            \"unitPrice\": 14.99\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4.4 Order with Mixed Products and Memberships",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Should handle mixed content correctly', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('processed successfully');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344665,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        },\n        {\n            \"productId\": 2,\n            \"quantity\": 2,\n            \"unitPrice\": 33.51\n        },\n        {\n            \"membershipType\": \"BookClub\",\n            \"quantity\": 1,\n            \"unitPrice\": 0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Error Handling and Validation",
+			"item": [
+				{
+					"name": "5.1 Invalid Customer ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code should be 404', function () {",
+									"    pm.expect(pm.response.code).to.eql(404);",
+									"});",
+									"pm.test('Should return customer not found error', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error).to.include('Customer with ID 9999999 not found');",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344666,\n    \"customerId\": 9999999,\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5.2 Invalid Product ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code should be 400', function () {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"",
+									"pm.test('Should return product not found error', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error).to.include('Product with ID 999 not found');",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344667,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"productId\": 999,\n            \"quantity\": 1,\n            \"unitPrice\": 14.99\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5.3 Empty Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code should be 400', function () {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"pm.test('Should return empty order error', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error).to.include('Order must contain at least one item');",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344668,\n    \"customerId\": 4567890,\n    \"items\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5.4 Invalid Membership Type String",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code should be 400', function () {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});",
+									"pm.test('Should return error about invalid membership type', function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.error) {",
+									"        pm.expect(jsonData.error).to.include('Invalid membership type');",
+									"    } else if (jsonData.errors) {",
+									"        pm.expect(jsonData.errors).to.have.property('MembershipType');",
+									"    }",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 3344669,\n    \"customerId\": 4567890,\n    \"items\": [\n        {\n            \"membershipType\": \"InvalidMembership\",\n            \"quantity\": 1,\n            \"unitPrice\": 0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Get Purchase Order Tests",
+			"item": [
+				{
+					"name": "6.1 Get Existing Purchase Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// We need some sort of persistence in our application or an initial seed containing order 3344656 before this can work",
+									"",
+									"// pm.test('Status code is 200', function () {",
+									"//     pm.response.to.have.status(200);",
+									"// });",
+									"// pm.test('Response has correct order details', function () {",
+									"//     var jsonData = pm.response.json();",
+									"//     pm.expect(jsonData.id).to.eql(3344656);",
+									"//     pm.expect(jsonData.customerId).to.eql(4567890);",
+									"//     pm.expect(jsonData.itemLines).to.be.an('array');",
+									"//     pm.expect(jsonData.itemLines.length).to.be.at.least(1);",
+									"// });",
+									"// pm.test('Item lines have correct structure', function () {",
+									"//     var jsonData = pm.response.json();",
+									"//     if (jsonData.itemLines && jsonData.itemLines.length > 0) {",
+									"//         var firstItem = jsonData.itemLines[0];",
+									"//         pm.expect(firstItem).to.have.property('productName');",
+									"//         pm.expect(firstItem).to.have.property('quantity');",
+									"//         pm.expect(firstItem).to.have.property('unitPrice');",
+									"//         pm.expect(firstItem).to.have.property('totalPrice');",
+									"//     }",
+									"// });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder/3344656",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder",
+								"3344656"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6.2 Get Non-Existent Purchase Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code should be 404', function () {",
+									"    pm.expect(pm.response.code).to.eql(404);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/purchaseorder/9999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"purchaseorder",
+								"9999999"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	]
+}

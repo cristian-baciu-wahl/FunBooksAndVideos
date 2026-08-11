@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/Documentation/">
-    <File Path="DockerExecute.txt" />
+    <File Path="DockerCommands.txt" />
+    <File Path="FunBooksAndVideos API Tests.json" />
+    <File Path="README.txt" />
   </Folder>
   <Project Path="FunBooksAndVideos.API/FunBooksAndVideos.API.csproj" />
   <Project Path="FunBooksAndVideos.Application/FunBooksAndVideos.Application.csproj" />
