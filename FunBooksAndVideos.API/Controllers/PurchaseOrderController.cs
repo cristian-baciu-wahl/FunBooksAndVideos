@@ -18,29 +18,18 @@ namespace FunBooksAndVideos.API.Controllers
         [ServiceFilter(typeof(ValidationFilter<PurchaseOrderRequest>))]
         public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderRequest request)
         {
-            try
-            {
-                var order = await orderProcessor.ProcessPurchaseOrderAsync(request);
+            var order = await orderProcessor.ProcessPurchaseOrderAsync(request);
 
-                return Ok(new
+            return CreatedAtAction(
+                nameof(GetPurchaseOrder),
+                new { id = order.Id },
+                new
                 {
                     orderId = order.Id,
-                    message = "Purchase order processed successfully",
+                    Message = "Purchase order processed successfully",
                     items = order.ItemLines.Count,
                     totalPrice = order.TotalPrice
                 });
-            }
-            // A global exception handler producing ProblemDetails would be cleaner later
-            catch (ProductNotFoundException ex) 
-            {
-                return BadRequest(new
-                {
-                    errors = new
-                    {
-                        ProductId = new[] { ex.Message }
-                    }
-                });
-            }
         }
 
         [HttpGet("{id}")]

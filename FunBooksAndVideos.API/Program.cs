@@ -1,4 +1,5 @@
 using FluentValidation;
+using FunBooksAndVideos.API.Exceptions;
 using FunBooksAndVideos.API.Filters;
 using FunBooksAndVideos.API.Validators;
 using FunBooksAndVideos.Application.Config;
@@ -38,6 +39,13 @@ builder.Services.AddBusinessRules();
 // Register processor
 builder.Services.AddScoped<IPurchaseOrderProcessor, PurchaseOrderProcessor>();
 
+// Add global exception handling and problem details middleware
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Add framework health check 
+builder.Services.AddHealthChecks();
+
 // Configure CORS to Allow All - for production apps, we want to limit this 
 builder.Services.AddCors(options =>
 {
@@ -62,6 +70,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseExceptionHandler();
+
 // Remove HTTPS redirection for Docker testing
 // app.UseHttpsRedirection();
 
@@ -69,8 +79,7 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 
-// Add health check endpoint
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
+app.MapHealthChecks("/health");
 
 app.Run();
 

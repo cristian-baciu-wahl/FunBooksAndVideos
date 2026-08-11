@@ -39,6 +39,10 @@ public class PurchaseOrderRequestValidator: AbstractValidator<PurchaseOrderReque
                     .Must(BeValidMembershipType)
                     .WithMessage("Invalid membership type")
                     .When(x => x.MembershipType is not null);
+
+                item.RuleFor(x => x.Quantity)
+                    .GreaterThan(0)
+                    .WithMessage("Quantity must be greater than 0");
             });
     }
 
