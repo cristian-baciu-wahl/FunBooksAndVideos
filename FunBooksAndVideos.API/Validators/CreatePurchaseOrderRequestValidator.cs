@@ -1,41 +1,61 @@
 ﻿using FluentValidation;
 using FunBooksAndVideos.API.Models;
-using FunBooksAndVideos.Application.Interfaces;
-using FunBooksAndVideos.Infrastructure.Interfaces;
+using FunBooksAndVideos.Domain;
 
 namespace FunBooksAndVideos.API.Validators;
 
-public class CreatePurchaseOrderRequestValidator : AbstractValidator<CreatePurchaseOrderRequest>
+public class CreatePurchaseOrderRequestValidator
+    : AbstractValidator<CreatePurchaseOrderRequest>
 {
-    private readonly ICustomerMembershipService _customerService;
-    private readonly IPurchaseOrderRepository _orderRepository;
-
-    public CreatePurchaseOrderRequestValidator(
-        ICustomerMembershipService customerService,
-        IPurchaseOrderRepository orderRepository)
+    public CreatePurchaseOrderRequestValidator()
     {
-        _customerService = customerService;
-        _orderRepository = orderRepository;
+        RuleFor(x => x.Id)
+            .GreaterThan(0)
+            .WithMessage("Order ID must be greater than 0");
 
-        // Validate Customer ID
         RuleFor(x => x.CustomerId)
-            .Must(CustomerExists)
-            .WithMessage(x => $"Customer with ID {x.CustomerId} not found");
+            .GreaterThan(0)
+            .WithMessage("Customer ID must be greater than 0");
 
-        // Validate Items List
         RuleFor(x => x.Items)
-            .NotNull()
-            .WithMessage("Order must contain at least one item")
-            .Must(items => items != null && items.Count != 0)
-            .WithMessage("Order must contain at least one item");
+            .NotEmpty()
+            .WithMessage("At least one item is required");
 
-        // Validate each item using a specific order item validator
         RuleForEach(x => x.Items)
-            .SetValidator(new OrderItemRequestValidator(_orderRepository));
+            .ChildRules(item =>
+            {
+                // A line item must be either a product, or a membership
+                item.RuleFor(x => x.ProductId)
+                    .NotNull()
+                    .GreaterThan(0)
+                    .WithMessage("Product ID must be greater than 0")
+                    .When(x => string.IsNullOrWhiteSpace(x.MembershipType));
+
+                item.RuleFor(x => x.MembershipType)
+                    .NotEmpty()
+                    .WithMessage("Membership type is required")
+                    .When(x => x.ProductId == null);
+
+                item.RuleFor(x => x.MembershipType)
+                    .Must(BeValidMembershipType)
+                    .WithMessage("Invalid membership type")
+                    .When(x => !string.IsNullOrWhiteSpace(x.MembershipType));
+
+                item.RuleFor(x => x.Quantity)
+                    .GreaterThan(0)
+                    .WithMessage("Quantity must be greater than 0");
+
+                item.RuleFor(x => x.UnitPrice)
+                    .GreaterThanOrEqualTo(0)
+                    .WithMessage("Unit price cannot be negative");
+            });
     }
 
-    private bool CustomerExists(int customerId)
+    private static bool BeValidMembershipType(string? membershipType)
     {
-        return _customerService.CustomerExists(customerId);
+        return Enum.TryParse<MembershipType>(
+            membershipType,
+            ignoreCase: true,
+            out _);
     }
 }

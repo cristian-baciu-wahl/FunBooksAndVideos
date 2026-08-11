@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+﻿using FunBooksAndVideos.API.Filters;
 using FunBooksAndVideos.API.Models;
 using FunBooksAndVideos.Application.Interfaces;
 using FunBooksAndVideos.Domain;
@@ -13,35 +13,20 @@ namespace FunBooksAndVideos.API.Controllers
     {
         private readonly IPurchaseOrderProcessor _orderProcessor;
         private readonly IPurchaseOrderRepository _orderRepository;
-        private readonly IValidator<CreatePurchaseOrderRequest> _validator;
 
         public PurchaseOrderController(
             IPurchaseOrderProcessor orderProcessor,
-            IPurchaseOrderRepository orderRepository,
-            IValidator<CreatePurchaseOrderRequest> validator
+            IPurchaseOrderRepository orderRepository
         )
         {
             _orderProcessor = orderProcessor;
             _orderRepository = orderRepository;
-            _validator = validator;
         }
 
         [HttpPost]
+        [ServiceFilter(typeof(ValidationFilter<CreatePurchaseOrderRequest>))]
         public async Task<IActionResult> CreatePurchaseOrder([FromBody] CreatePurchaseOrderRequest request)
         {
-            var validationResult = await _validator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors
-                    .GroupBy(e => e.PropertyName)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.Select(e => e.ErrorMessage).ToArray()
-                    );
-
-                return BadRequest(new { errors });
-            }
-
             var order = new PurchaseOrder(request.Id, request.CustomerId);
 
             foreach (var item in request.Items)

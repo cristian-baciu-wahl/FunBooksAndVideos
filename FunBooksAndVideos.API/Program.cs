@@ -1,4 +1,5 @@
 using FluentValidation;
+using FunBooksAndVideos.API.Filters;
 using FunBooksAndVideos.API.Models;
 using FunBooksAndVideos.API.Validators;
 using FunBooksAndVideos.Application.Config;
@@ -21,10 +22,9 @@ builder.Services.AddScoped<IShippingSlipService, ShippingSlipService>();
 builder.Services.AddScoped<ICustomerMembershipService, CustomerMembershipService>();
 builder.Services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
 
-// Register all validators automatically
+// Register all validators and filters
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePurchaseOrderRequestValidator>();
-// Or register individually
-builder.Services.AddScoped<IValidator<CreatePurchaseOrderRequest>, CreatePurchaseOrderRequestValidator>();
+builder.Services.AddScoped<ValidationFilter<CreatePurchaseOrderRequest>>();
 
 // Register rule engine
 builder.Services.AddScoped<IBusinessRuleEngine, BusinessRuleEngine>();
