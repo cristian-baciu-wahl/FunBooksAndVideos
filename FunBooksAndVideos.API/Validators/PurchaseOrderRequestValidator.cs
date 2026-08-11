@@ -44,9 +44,6 @@ public class PurchaseOrderRequestValidator: AbstractValidator<PurchaseOrderReque
                     .GreaterThan(0)
                     .WithMessage("Quantity must be greater than 0");
 
-                item.RuleFor(x => x.UnitPrice)
-                    .GreaterThanOrEqualTo(0)
-                    .WithMessage("Unit price cannot be negative");
             });
     }
 

@@ -18,8 +18,11 @@ builder.Services.AddSwaggerGen();
 
 // Register core services
 builder.Services.AddScoped<IShippingSlipService, ShippingSlipService>();
-builder.Services.AddScoped<ICustomerMembershipService, CustomerMembershipService>();
-builder.Services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+
+//non-durable persistence, until app starts - for production, we would use a DB 
+builder.Services.AddSingleton<ICustomerMembershipService, CustomerMembershipService>();
+builder.Services.AddSingleton<IPurchaseOrderRepository, PurchaseOrderRepository>();    
+
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 
 // Register all validators and filters
@@ -70,3 +73,5 @@ app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
 
 app.Run();
+
+public partial class Program { }

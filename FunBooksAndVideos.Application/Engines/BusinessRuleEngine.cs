@@ -41,10 +41,10 @@ public class BusinessRuleEngine : IBusinessRuleEngine
     {
         ArgumentNullException.ThrowIfNull(order);
 
-        // Sort rules by priority (higher priority first)
+        // Lower numbers indicate higher priority
         var sortedRules = _rules
             .Where(rule => rule.ShouldApply(order))
-            .OrderByDescending(rule => rule.Priority)
+            .OrderBy(rule => rule.Priority)
             .ToList();
 
         _logger.LogInformation($"Executing {sortedRules.Count} rules for order {order.Id}");

@@ -1,4 +1,5 @@
 ﻿using FunBooksAndVideos.API.Filters;
+using FunBooksAndVideos.Application.Exceptions;
 using FunBooksAndVideos.Application.Interfaces;
 using FunBooksAndVideos.Application.Mappers;
 using FunBooksAndVideos.Application.Models;
@@ -17,15 +18,29 @@ namespace FunBooksAndVideos.API.Controllers
         [ServiceFilter(typeof(ValidationFilter<PurchaseOrderRequest>))]
         public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderRequest request)
         {
-            var order = await orderProcessor.ProcessPurchaseOrderAsync(request);
-
-            return Ok(new
+            try
             {
-                orderId = order.Id,
-                message = "Purchase order processed successfully",
-                items = order.ItemLines.Count,
-                totalPrice = order.TotalPrice
-            });
+                var order = await orderProcessor.ProcessPurchaseOrderAsync(request);
+
+                return Ok(new
+                {
+                    orderId = order.Id,
+                    message = "Purchase order processed successfully",
+                    items = order.ItemLines.Count,
+                    totalPrice = order.TotalPrice
+                });
+            }
+            // A global exception handler producing ProblemDetails would be cleaner later
+            catch (ProductNotFoundException ex) 
+            {
+                return BadRequest(new
+                {
+                    errors = new
+                    {
+                        ProductId = new[] { ex.Message }
+                    }
+                });
+            }
         }
 
         [HttpGet("{id}")]

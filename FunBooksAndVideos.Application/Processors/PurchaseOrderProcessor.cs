@@ -1,4 +1,5 @@
-﻿using FunBooksAndVideos.Application.Interfaces;
+﻿using FunBooksAndVideos.Application.Exceptions;
+using FunBooksAndVideos.Application.Interfaces;
 using FunBooksAndVideos.Application.Models;
 using FunBooksAndVideos.Domain;
 
@@ -22,21 +23,25 @@ public class PurchaseOrderProcessor(IBusinessRuleEngine ruleEngine, IPurchaseOrd
             var itemLine = new ItemLine
             {
                 Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice
             };
 
-            // Only look up a product when a ProductId was supplied
             if (item.ProductId.HasValue)
             {
-                var product = await repository.GetProductByIdAsync(item.ProductId.Value);
+                var productId = item.ProductId.Value;
+
+                // A better design would be to use ProblemDetails.
+                var product = await repository.GetProductByIdAsync(productId) ?? throw new ProductNotFoundException(productId);
+
                 itemLine.Product = product;
+
+                itemLine.UnitPrice = product.Price; 
             }
 
-            // Only set membership when a valid membership type string is provided
             if (!string.IsNullOrWhiteSpace(item.MembershipType) &&
                 Enum.TryParse<MembershipType>(item.MembershipType, true, out var membershipType))
             {
                 itemLine.MembershipType = membershipType;
+                itemLine.UnitPrice = 0m; //I am not sure membership should have a price
             }
 
             order.ItemLines.Add(itemLine);
