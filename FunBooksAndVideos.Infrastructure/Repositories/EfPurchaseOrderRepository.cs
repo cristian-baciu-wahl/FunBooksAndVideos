@@ -8,12 +8,14 @@ namespace FunBooksAndVideos.Infrastructure.Repositories;
 public sealed class EfPurchaseOrderRepository(AppDbContext dbContext)
     : IPurchaseOrderRepository
 {
-    public async Task SavePurchaseOrderAsync(PurchaseOrder order)
+    public async Task<PurchaseOrder> SavePurchaseOrderAsync(PurchaseOrder order)
     {
         ArgumentNullException.ThrowIfNull(order);
 
         await dbContext.PurchaseOrders.AddAsync(order);
         await dbContext.SaveChangesAsync();
+
+        return order;
     }
 
     public async Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int id)

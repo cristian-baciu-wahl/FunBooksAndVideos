@@ -23,7 +23,6 @@ public class PurchaseOrderApiTests : IClassFixture<WebApplicationFactory<Program
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 9999,
             CustomerId = 4567890,
             Items =
             [
@@ -45,7 +44,6 @@ public class PurchaseOrderApiTests : IClassFixture<WebApplicationFactory<Program
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 60,
             CustomerId = 4567890,
             Items =
             [
@@ -68,7 +66,6 @@ public class PurchaseOrderApiTests : IClassFixture<WebApplicationFactory<Program
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 61,
             CustomerId = 4567890,
             Items =
             [
@@ -89,7 +86,6 @@ public class PurchaseOrderApiTests : IClassFixture<WebApplicationFactory<Program
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 62,
             CustomerId = 4567890,
             Items =
             [

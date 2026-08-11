@@ -118,7 +118,10 @@ namespace FunBooksAndVideos.Infrastructure.Migrations
             modelBuilder.Entity("FunBooksAndVideos.Domain.PurchaseOrder", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("int");

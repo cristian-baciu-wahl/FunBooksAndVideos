@@ -32,7 +32,6 @@ public class PurchaseOrderProcessorTests
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 1,
             CustomerId = 4567890,
             Items =
             [
@@ -64,7 +63,6 @@ public class PurchaseOrderProcessorTests
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 2,
             CustomerId = 4567890,
             Items =
             [
@@ -106,7 +104,6 @@ public class PurchaseOrderProcessorTests
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 10,
             CustomerId = 4567890,
             Items =
             [
@@ -140,7 +137,6 @@ public class PurchaseOrderProcessorTests
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 11,
             CustomerId = 4567890,
             Items =
             [
@@ -167,7 +163,7 @@ public class PurchaseOrderProcessorTests
         Assert.Equal(29.98m, order.TotalPrice);
 
         _shipping.Verify(
-            x => x.GenerateShippingSlip(11, 4567890),
+            x => x.GenerateShippingSlip(0, 4567890),
             Times.Once);
         _membership.Verify(
             x => x.ActivateMembership(It.IsAny<int>(), It.IsAny<MembershipType>()),
@@ -180,7 +176,6 @@ public class PurchaseOrderProcessorTests
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 12,
             CustomerId = 4567890,
             Items =
             [
@@ -204,7 +199,7 @@ public class PurchaseOrderProcessorTests
         Assert.Equal(59.96m, order.TotalPrice);
 
         _shipping.Verify(
-            x => x.GenerateShippingSlip(12, 4567890),
+            x => x.GenerateShippingSlip(0, 4567890),
             Times.Once);
 
         _repo.Verify(x => x.GetProductByIdAsync(1), Times.Exactly(2));
@@ -236,7 +231,6 @@ public class PurchaseOrderProcessorTests
     {
         var request = new PurchaseOrderRequest
         {
-            Id = 20,
             CustomerId = 4567890,
             Items =
             [

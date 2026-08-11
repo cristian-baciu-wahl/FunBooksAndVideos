@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FunBooksAndVideos.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260811192333_InitialCreate")]
+    [Migration("20260811230941_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -121,7 +121,10 @@ namespace FunBooksAndVideos.Infrastructure.Migrations
             modelBuilder.Entity("FunBooksAndVideos.Domain.PurchaseOrder", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("int");

@@ -8,9 +8,10 @@ public class PurchaseOrderRequestValidator: AbstractValidator<PurchaseOrderReque
 {
     public PurchaseOrderRequestValidator()
     {
-        RuleFor(x => x.Id)
-            .GreaterThan(0)
-            .WithMessage("Order ID must be greater than 0");
+        // This should be server side, not decided by front-end
+        //RuleFor(x => x.Id)
+        //    .GreaterThan(0)
+        //    .WithMessage("Order ID must be greater than 0");
 
         RuleFor(x => x.CustomerId)
             .GreaterThan(0)

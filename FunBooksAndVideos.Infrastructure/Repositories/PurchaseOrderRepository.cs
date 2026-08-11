@@ -34,10 +34,10 @@ public class PurchaseOrderRepository : IPurchaseOrderRepository
         });
     }
 
-    public async Task SavePurchaseOrderAsync(PurchaseOrder order)
+    public async Task<PurchaseOrder> SavePurchaseOrderAsync(PurchaseOrder order)
     {
         _orders.TryAdd(order.Id, order);
-        await Task.CompletedTask;
+        return await Task.FromResult(order);
     }
 
     public async Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int id)

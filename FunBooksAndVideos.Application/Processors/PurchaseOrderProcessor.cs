@@ -16,7 +16,7 @@ public class PurchaseOrderProcessor(IBusinessRuleEngine ruleEngine, IPurchaseOrd
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var order = new PurchaseOrder(request.Id, request.CustomerId);
+        var order = new PurchaseOrder(request.CustomerId);
 
         foreach (var item in request.Items)
         {
