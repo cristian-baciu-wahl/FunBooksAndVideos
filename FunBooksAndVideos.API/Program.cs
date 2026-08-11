@@ -20,6 +20,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IShippingSlipService, ShippingSlipService>();
 builder.Services.AddScoped<ICustomerMembershipService, CustomerMembershipService>();
 builder.Services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 
 // Register all validators and filters
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePurchaseOrderRequestValidator>();
