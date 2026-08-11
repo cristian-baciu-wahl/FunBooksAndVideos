@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using FunBooksAndVideos.API.Models;
+using FunBooksAndVideos.Application.Models;
 using FunBooksAndVideos.Domain;
 
 namespace FunBooksAndVideos.API.Validators;

@@ -1,7 +1,4 @@
-﻿using FunBooksAndVideos.Domain;
-using System.Text.Json.Serialization;
-
-namespace FunBooksAndVideos.API.Models;
+﻿namespace FunBooksAndVideos.Application.Models;
 
 public class CreatePurchaseOrderRequest
 {

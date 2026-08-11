@@ -1,6 +1,6 @@
 ﻿using FunBooksAndVideos.Domain;
 
-namespace FunBooksAndVideos.Infrastructure.Interfaces;
+namespace FunBooksAndVideos.Application.Interfaces;
 
 public interface IPurchaseOrderRepository
 {

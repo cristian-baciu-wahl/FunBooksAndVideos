@@ -1,5 +1,5 @@
-﻿using FunBooksAndVideos.Domain;
-using FunBooksAndVideos.Infrastructure.Interfaces;
+﻿using FunBooksAndVideos.Application.Interfaces;
+using FunBooksAndVideos.Domain;
 using System.Collections.Concurrent;
 
 namespace FunBooksAndVideos.Infrastructure.Repositories;

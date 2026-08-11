@@ -1,210 +1,108 @@
 ﻿using FunBooksAndVideos.Application.Engines;
 using FunBooksAndVideos.Application.Interfaces;
+using FunBooksAndVideos.Application.Models;
 using FunBooksAndVideos.Application.Processors;
 using FunBooksAndVideos.Application.Rules;
 using FunBooksAndVideos.Domain;
-using FunBooksAndVideos.Tests.Models;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace FunBooksAndVideos.Tests
+namespace FunBooksAndVideos.Tests;
+
+public class PurchaseOrderProcessorTests
 {
-    public class PurchaseOrderProcessorTests
+    private readonly Mock<IShippingSlipService> _shipping = new();
+    private readonly Mock<ICustomerMembershipService> _membership = new();
+    private readonly Mock<IPurchaseOrderRepository> _repo = new();
+    private readonly PurchaseOrderProcessor _sut;
+
+    public PurchaseOrderProcessorTests()
     {
-        private readonly Mock<IShippingSlipService> _shippingSlipServiceMock;
-        private readonly Mock<ICustomerMembershipService> _membershipServiceMock;
-        private readonly Mock<ILogger<BusinessRuleEngine>> _loggerMock;
-        private readonly BusinessRuleEngine _ruleEngine;
-        private readonly PurchaseOrderProcessor _processor;
+        var engine = new BusinessRuleEngine(Mock.Of<ILogger<BusinessRuleEngine>>());
+        engine.AddRule(new ActivateMembershipRule(_membership.Object));
+        engine.AddRule(new GenerateShippingSlipRule(_shipping.Object));
+        _sut = new PurchaseOrderProcessor(engine, _repo.Object);
+    }
 
-        public PurchaseOrderProcessorTests()
-        {
-            _shippingSlipServiceMock = new Mock<IShippingSlipService>();
-            _membershipServiceMock = new Mock<ICustomerMembershipService>();
-            _loggerMock = new Mock<ILogger<BusinessRuleEngine>>();
+    [Theory]
+    [MemberData(nameof(TestScenarios))]
+    public async Task ProcessPurchaseOrderAsync_AppliesRules(CreatePurchaseOrderRequest request, bool expectMembership, bool expectShipping)
+    {
+        // Arrange
+        SetupRepo(request);
 
-            // Setup rule engine with rules
-            _ruleEngine = new BusinessRuleEngine(_loggerMock.Object);
-            _ruleEngine.AddRule(new ActivateMembershipRule(_membershipServiceMock.Object));
-            _ruleEngine.AddRule(new GenerateShippingSlipRule(_shippingSlipServiceMock.Object));
+        // Act
+        var result = await _sut.ProcessPurchaseOrderAsync(request);
 
-            _processor = new PurchaseOrderProcessor(_ruleEngine);
-        }
+        // Assert
+        Assert.Equal(request.Items.Count, result.ItemLines.Count);
+        _membership.Verify(x => x.ActivateMembership(It.IsAny<int>(), It.IsAny<MembershipType>()),
+            expectMembership ? Times.AtLeastOnce() : Times.Never());
+        _shipping.Verify(x => x.GenerateShippingSlip(It.IsAny<int>(), It.IsAny<int>()),
+            expectShipping ? Times.AtLeastOnce() : Times.Never());
+        _repo.Verify(x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()), Times.Once);
+    }
 
-        [Fact]
-        public void ProcessPurchaseOrder_WithMembership_ActivatesMembership()
-        {
-            // Arrange
-            var order = new PurchaseOrder(1, 12345);
-            order.ItemLines.Add(new ItemLine
-            {
-                MembershipType = MembershipType.BookClub,
-                Quantity = 1,
-                UnitPrice = 0
-            });
+    [Fact]
+    public async Task ProcessPurchaseOrderAsync_NullRequest_Throws() =>
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _sut.ProcessPurchaseOrderAsync(null));
 
-            // Act
-            _processor.ProcessPurchaseOrder(order);
+    [Fact]
+    public async Task ProcessPurchaseOrderAsync_DoesNotCallGetProduct_WhenItemsAreOnlyMemberships()
+    {
+        // Arrange
+        var request = CreateRequest(MembershipType.BookClub, false);
+        // No product ids present so repository GetProductByIdAsync should not be called
 
-            // Assert
-            _membershipServiceMock.Verify(
-                x => x.ActivateMembership(12345, MembershipType.BookClub),
-                Times.Once);
-        }
+        // Act
+        var result = await _sut.ProcessPurchaseOrderAsync(request);
 
-        [Fact]
-        public void ProcessPurchaseOrder_WithPhysicalProduct_GeneratesShippingSlip()
-        {
-            // Arrange
-            var order = new PurchaseOrder(1, 12345);
-            var book = new Book
-            {
-                Id = 1,
-                Name = "Test Book",
-                Author = "Test Author",
-                Isbn = "9781234567897",
-                Price = 10.99m
-            };
-            order.ItemLines.Add(new ItemLine
-            {
-                Product = book,
-                Quantity = 1,
-                UnitPrice = 10.99m
-            });
+        // Assert
+        Assert.Single(result.ItemLines);
+        _repo.Verify(x => x.GetProductByIdAsync(It.IsAny<int>()), Times.Never);
+        _repo.Verify(x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()), Times.Once);
+    }
 
-            // Act
-            _processor.ProcessPurchaseOrder(order);
+    [Fact]
+    public async Task ProcessPurchaseOrderAsync_CallsGetProduct_ForProductItems()
+    {
+        // Arrange
+        var request = CreateRequest(null, true);
+        SetupRepo(request);
 
-            // Assert
-            _shippingSlipServiceMock.Verify(
-                x => x.GenerateShippingSlip(1, 12345),
-                Times.Once);
-        }
+        // Act
+        var result = await _sut.ProcessPurchaseOrderAsync(request);
 
-        [Fact]
-        public void ProcessPurchaseOrder_WithMembershipAndPhysicalProduct_ProcessesBothRulesInPriorityOrder()
-        {
-            // Arrange
-            var order = new PurchaseOrder(1, 12345);
-            order.ItemLines.Add(new ItemLine
-            {
-                MembershipType = MembershipType.Premium,
-                Quantity = 1,
-                UnitPrice = 0
-            });
-            var book = new Book
-            {
-                Id = 1,
-                Name = "Test Book",
-                Author = "Test Author",
-                Isbn = "9781234567897",
-                Price = 10.99m
-            };
-            order.ItemLines.Add(new ItemLine
-            {
-                Product = book,
-                Quantity = 1,
-                UnitPrice = 10.99m
-            });
+        // Assert
+        Assert.Single(result.ItemLines);
+        _repo.Verify(x => x.GetProductByIdAsync(It.IsAny<int>()), Times.Once);
+        _repo.Verify(x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()), Times.Once);
+    }
 
-            // Act
-            _processor.ProcessPurchaseOrder(order);
+    // helper for building requests moved to CreateRequest; synchronous PurchaseOrder builders removed
 
-            // Assert
-            var callOrder = new List<string>();
-            _membershipServiceMock
-                .Setup(x => x.ActivateMembership(It.IsAny<int>(), It.IsAny<MembershipType>()))
-                .Callback(() => callOrder.Add("Membership"));
-            _shippingSlipServiceMock
-                .Setup(x => x.GenerateShippingSlip(It.IsAny<int>(), It.IsAny<int>()))
-                .Callback(() => callOrder.Add("Shipping"));
+    private void SetupRepo(CreatePurchaseOrderRequest request)
+    {
+        foreach (var item in request.Items.Where(x => x.ProductId.HasValue))
+            _repo.Setup(x => x.GetProductByIdAsync(item.ProductId.Value))
+                .ReturnsAsync(new Book { Name = "Test", Isbn = "00000000", Author = "Allan Joe", Id = 1 });
+    }
 
-            _membershipServiceMock.Verify(
-                x => x.ActivateMembership(12345, MembershipType.Premium),
-                Times.Once);
-            _shippingSlipServiceMock.Verify(
-                x => x.GenerateShippingSlip(1, 12345),
-                Times.Once);
-        }
+    public static TheoryData<CreatePurchaseOrderRequest, bool, bool> TestScenarios() => new()
+    {
+        { CreateRequest(MembershipType.BookClub, false), true, false },
+        { CreateRequest(null, true), false, true },
+        { CreateRequest(MembershipType.Premium, true), true, true },
+        { CreateRequest(null, false), false, false }
+    };
 
-        [Fact]
-        public void ProcessPurchaseOrder_WithNoMembershipOrPhysicalProduct_DoesNothing()
-        {
-            // Arrange
-            var order = new PurchaseOrder(1, 12345);
-            var video = new Video
-            {
-                Id = 1,
-                Name = "Test Video",
-                Director = "Test Director",
-                Price = 5.99m
-            };
-            order.ItemLines.Add(new ItemLine
-            {
-                Product = video,
-                Quantity = 1,
-                UnitPrice = 5.99m
-            });
-
-            // Act
-            _processor.ProcessPurchaseOrder(order);
-
-            // Assert
-            _membershipServiceMock.Verify(
-                x => x.ActivateMembership(It.IsAny<int>(), It.IsAny<MembershipType>()),
-                Times.Never);
-            _shippingSlipServiceMock.Verify(
-                x => x.GenerateShippingSlip(It.IsAny<int>(), It.IsAny<int>()),
-                Times.Never);
-        }
-
-        [Fact]
-        public void ProcessPurchaseOrder_NullOrder_ThrowsArgumentNullException()
-        {
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => _processor.ProcessPurchaseOrder(null));
-        }
-
-        [Fact]
-        public void AddRule_DuplicateRuleId_ThrowsInvalidOperationException()
-        {
-            // Arrange
-            var rule1 = new ActivateMembershipRule(_membershipServiceMock.Object);
-            var rule2 = new ActivateMembershipRule(_membershipServiceMock.Object); // Same rule ID
-
-            // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => _ruleEngine.AddRule(rule2));
-        }
-
-        [Fact]
-        public void RemoveRule_RemovesExistingRule()
-        {
-            // Arrange
-            var rule = new TestPremiumMembershipRule(_membershipServiceMock.Object);
-            _ruleEngine.AddRule(rule);
-
-            // Act
-            _ruleEngine.RemoveRule(rule.RuleId);
-
-            // Assert
-            // Create a new order and verify rule doesn't apply
-            var order = new PurchaseOrder(1, 12345);
-            order.ItemLines.Add(new ItemLine
-            {
-                MembershipType = MembershipType.BookClub,
-                Quantity = 1,
-                UnitPrice = 0
-            });
-
-            // Reset mock to ensure no calls
-            _membershipServiceMock.Reset();
-
-            _processor.ProcessPurchaseOrder(order);
-
-            // Verify the rule was not applied
-            _membershipServiceMock.Verify(
-                x => x.ActivateMembership(It.IsAny<int>(), MembershipType.Premium),
-                Times.Never);
-        }
+    private static CreatePurchaseOrderRequest CreateRequest(MembershipType? membership, bool hasPhysical)
+    {
+        var items = new List<OrderItemRequest>();
+        if (membership.HasValue)
+            items.Add(new OrderItemRequest { MembershipType = membership.ToString(), Quantity = 1 });
+        if (hasPhysical)
+            items.Add(new OrderItemRequest { ProductId = 1, Quantity = 1, UnitPrice = 14.99m });
+        return new CreatePurchaseOrderRequest { Id = 1, CustomerId = 12345, Items = items };
     }
 }

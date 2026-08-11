@@ -1,13 +1,12 @@
 using FluentValidation;
 using FunBooksAndVideos.API.Filters;
-using FunBooksAndVideos.API.Models;
 using FunBooksAndVideos.API.Validators;
 using FunBooksAndVideos.Application.Config;
 using FunBooksAndVideos.Application.Engines;
 using FunBooksAndVideos.Application.Interfaces;
+using FunBooksAndVideos.Application.Models;
 using FunBooksAndVideos.Application.Processors;
 using FunBooksAndVideos.Application.Services;
-using FunBooksAndVideos.Infrastructure.Interfaces;
 using FunBooksAndVideos.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
