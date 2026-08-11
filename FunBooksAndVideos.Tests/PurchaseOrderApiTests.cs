@@ -1,7 +1,8 @@
-﻿using System.Net;
-using System.Net.Http.Json;
-using FunBooksAndVideos.Application.Models;
+﻿using FunBooksAndVideos.Application.Models;
+using FunBooksAndVideos.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace FunBooksAndVideos.Tests;
 
@@ -30,6 +31,72 @@ public class PurchaseOrderApiTests : IClassFixture<WebApplicationFactory<Program
                 {
                     ProductId = 999,
                     Quantity = 1,
+                }
+            ]
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/purchaseorder", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreatePurchaseOrder_WithProductAndMembershipOnSameLine_ReturnsBadRequest()
+    {
+        var request = new PurchaseOrderRequest
+        {
+            Id = 60,
+            CustomerId = 4567890,
+            Items =
+            [
+                new PurchaseOrderItemRequest
+                {
+                    ProductId = 1,
+                    MembershipType = MembershipType.BookClub.ToString(),
+                    Quantity = 1
+                }
+            ]
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/purchaseorder", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreatePurchaseOrder_WithNeitherProductNorMembership_ReturnsBadRequest()
+    {
+        var request = new PurchaseOrderRequest
+        {
+            Id = 61,
+            CustomerId = 4567890,
+            Items =
+            [
+                new PurchaseOrderItemRequest
+                {
+                    Quantity = 1
+                }
+            ]
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/purchaseorder", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreatePurchaseOrder_WithBlankMembershipType_ReturnsBadRequest()
+    {
+        var request = new PurchaseOrderRequest
+        {
+            Id = 62,
+            CustomerId = 4567890,
+            Items =
+            [
+                new PurchaseOrderItemRequest
+                {
+                    MembershipType = " ",
+                    Quantity = 1
                 }
             ]
         };

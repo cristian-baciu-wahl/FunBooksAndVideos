@@ -23,27 +23,22 @@ public class PurchaseOrderRequestValidator: AbstractValidator<PurchaseOrderReque
         RuleForEach(x => x.Items)
             .ChildRules(item =>
             {
-                // A line item must be either a product, or a membership
+                item.RuleFor(x => x)
+                    .Must(ContainExactlyOnePurchaseType)
+                    .WithMessage("Each item must contain either a product or a membership, but not both.");
+
                 item.RuleFor(x => x.ProductId)
-                    .NotNull()
                     .GreaterThan(0)
                     .WithMessage("Product ID must be greater than 0")
-                    .When(x => string.IsNullOrWhiteSpace(x.MembershipType));
+                    .When(x => x.ProductId.HasValue);
 
                 item.RuleFor(x => x.MembershipType)
+                    .Cascade(CascadeMode.Stop)
                     .NotEmpty()
                     .WithMessage("Membership type is required")
-                    .When(x => x.ProductId == null);
-
-                item.RuleFor(x => x.MembershipType)
                     .Must(BeValidMembershipType)
                     .WithMessage("Invalid membership type")
-                    .When(x => !string.IsNullOrWhiteSpace(x.MembershipType));
-
-                item.RuleFor(x => x.Quantity)
-                    .GreaterThan(0)
-                    .WithMessage("Quantity must be greater than 0");
-
+                    .When(x => x.MembershipType is not null);
             });
     }
 
@@ -53,5 +48,13 @@ public class PurchaseOrderRequestValidator: AbstractValidator<PurchaseOrderReque
             membershipType,
             ignoreCase: true,
             out _);
+    }
+
+    private static bool ContainExactlyOnePurchaseType(PurchaseOrderItemRequest item)
+    {
+        var hasProduct = item.ProductId.HasValue;
+        var hasMembership = item.MembershipType is not null;
+
+        return hasProduct ^ hasMembership;
     }
 }
