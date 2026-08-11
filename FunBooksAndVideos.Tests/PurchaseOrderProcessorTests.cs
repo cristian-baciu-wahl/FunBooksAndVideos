@@ -88,7 +88,7 @@ public class PurchaseOrderProcessorTests
         var order = await _sut.ProcessPurchaseOrderAsync(request);
 
         Assert.Single(order.ItemLines);
-        Assert.IsType<Video>(order.ItemLines[0].Product);
+        Assert.IsType<Video>((order.ItemLines[0] as ProductOrderLine)?.Product);
 
         _shipping.Verify(
             x => x.GenerateShippingSlip(It.IsAny<int>(), It.IsAny<int>()),

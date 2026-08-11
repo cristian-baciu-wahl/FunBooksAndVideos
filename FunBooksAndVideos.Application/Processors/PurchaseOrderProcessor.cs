@@ -20,31 +20,19 @@ public class PurchaseOrderProcessor(IBusinessRuleEngine ruleEngine, IPurchaseOrd
 
         foreach (var item in request.Items)
         {
-            var itemLine = new ItemLine
-            {
-                Quantity = item.Quantity,
-            };
-
             if (item.ProductId.HasValue)
             {
-                var productId = item.ProductId.Value;
+                var product = await repository.GetProductByIdAsync(item.ProductId.Value)
+                    ?? throw new ProductNotFoundException(item.ProductId.Value);
 
-                // A better design would be to use ProblemDetails.
-                var product = await repository.GetProductByIdAsync(productId) ?? throw new ProductNotFoundException(productId);
-
-                itemLine.Product = product;
-
-                itemLine.UnitPrice = product.Price; 
+                order.ItemLines.Add(new ProductOrderLine(product, item.Quantity));
             }
-
-            if (!string.IsNullOrWhiteSpace(item.MembershipType) &&
-                Enum.TryParse<MembershipType>(item.MembershipType, true, out var membershipType))
+            else
             {
-                itemLine.MembershipType = membershipType;
-                itemLine.UnitPrice = 0m; //I am not sure membership should have a price
-            }
+                var membershipType = Enum.Parse<MembershipType>(item.MembershipType!, true);
 
-            order.ItemLines.Add(itemLine);
+                order.ItemLines.Add(new MembershipOrderLine(membershipType));
+            }
         }
 
         _ruleEngine.ExecuteRules(order);

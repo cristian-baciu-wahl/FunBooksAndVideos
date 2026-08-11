@@ -1,5 +1,4 @@
 ﻿using FunBooksAndVideos.API.Filters;
-using FunBooksAndVideos.Application.Exceptions;
 using FunBooksAndVideos.Application.Interfaces;
 using FunBooksAndVideos.Application.Mappers;
 using FunBooksAndVideos.Application.Models;

@@ -13,11 +13,13 @@ public class GenerateShippingSlipRule(IShippingSlipService shippingSlipService) 
     public string RuleId => "BR2_GenerateShippingSlip";
 
     // Lower priority - can be done after membership activation
-    public int Priority => 20; 
+    public int Priority => 20;
 
     public bool ShouldApply(PurchaseOrder order)
     {
-        return order.ItemLines.Any(item => item.IsPhysicalProduct);
+        return order.ItemLines
+            .OfType<ProductOrderLine>()
+            .Any(line => line.Product.Type == ProductType.Physical);
     }
 
     public void Apply(PurchaseOrder order)

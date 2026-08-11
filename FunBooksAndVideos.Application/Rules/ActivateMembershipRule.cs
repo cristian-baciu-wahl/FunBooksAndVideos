@@ -1,5 +1,4 @@
 ﻿using FunBooksAndVideos.Application.Interfaces;
-using FunBooksAndVideos.Domain;
 
 namespace FunBooksAndVideos.Application.Rules;
 
@@ -16,19 +15,15 @@ public class ActivateMembershipRule(ICustomerMembershipService membershipService
 
     public bool ShouldApply(PurchaseOrder order)
     {
-        return order.ItemLines.Any(item => item.IsMembership);
+        return order.ItemLines.OfType<MembershipOrderLine>().Any();
     }
 
     public void Apply(PurchaseOrder order)
     {
-        var membershipLines = order.ItemLines.Where(item => item.IsMembership);
-
+        var membershipLines = order.ItemLines.OfType<MembershipOrderLine>().ToList();
         foreach (var line in membershipLines)
         {
-            if (!line.MembershipType.HasValue) continue;
-            _membershipService.ActivateMembership(
-                order.CustomerId,
-                line.MembershipType.Value);
+            _membershipService.ActivateMembership(order.CustomerId, line.MembershipType);
         }
     }
 }

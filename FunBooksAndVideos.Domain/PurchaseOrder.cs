@@ -1,10 +1,14 @@
-﻿namespace FunBooksAndVideos.Domain;
+﻿
+//another way of representing namespaces
+using FunBooksAndVideos.Domain;
 
-public class PurchaseOrder(int id, int customerId)
+public sealed class PurchaseOrder(int id, int customerId)
 {
-    public int Id { get; set; } = id;
-    public int CustomerId { get; set; } = customerId;
-    public DateTime OrderDate { get; set; } = DateTime.UtcNow;
-    public List<ItemLine> ItemLines { get; set; } = [];
-    public decimal TotalPrice => ItemLines.Sum(item => item.UnitPrice * item.Quantity);
+    public int Id { get; private set; } = id;
+    public int CustomerId { get; private set; } = customerId;
+    public DateTime OrderDate { get; private set; } = DateTime.UtcNow;
+
+    public List<PurchaseOrderLine> ItemLines { get; private set; } = [];
+
+    public decimal TotalPrice => ItemLines.Sum(line => line.TotalPrice);
 }
