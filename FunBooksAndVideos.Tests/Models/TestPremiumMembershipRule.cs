@@ -9,6 +9,8 @@ namespace FunBooksAndVideos.Tests.Models
 
         public string RuleId => "BR999_PremiumMembershipActivation";
 
+        public RuleExecutionStage Stage => RuleExecutionStage.PreProcessing;
+
         public void Apply(PurchaseOrder order)
         {
             membershipService.ActivateMembership(order.CustomerId, MembershipType.Premium);

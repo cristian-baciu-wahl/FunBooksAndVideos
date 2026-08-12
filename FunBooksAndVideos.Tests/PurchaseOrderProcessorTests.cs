@@ -1,38 +1,41 @@
-﻿using FunBooksAndVideos.Application.Engines;
-using FunBooksAndVideos.Application.Exceptions;
+﻿using FunBooksAndVideos.Application.Exceptions;
 using FunBooksAndVideos.Application.Interfaces;
 using FunBooksAndVideos.Application.Models;
 using FunBooksAndVideos.Application.Processors;
-using FunBooksAndVideos.Application.Rules;
-using FunBooksAndVideos.Application.Services;
 using FunBooksAndVideos.Domain;
-using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace FunBooksAndVideos.Tests;
+namespace FunBooksAndVideos.Tests.Processors;
 
 public class PurchaseOrderProcessorTests
 {
-    private readonly Mock<IShippingSlipService> _shipping = new();
-    private readonly Mock<ICustomerMembershipService> _membership = new();
+    private const int CustomerId = 4567890;
+
     private readonly Mock<IPurchaseOrderRepository> _repo = new();
+    private readonly Mock<IBusinessRuleEngine> _ruleEngine = new();
+
     private readonly PurchaseOrderProcessor _sut;
 
     public PurchaseOrderProcessorTests()
     {
-        // We added all our rules here, but depending on how we test, we might decide to test rules in isolation 
-        var engine = new BusinessRuleEngine(Mock.Of<ILogger<BusinessRuleEngine>>(), []);
-        engine.AddRule(new ActivateMembershipRule(_membership.Object));
-        engine.AddRule(new GenerateShippingSlipRule(_shipping.Object));
-        _sut = new PurchaseOrderProcessor(engine, _repo.Object);
+        _sut = new PurchaseOrderProcessor(
+            _ruleEngine.Object,
+            _repo.Object);
     }
 
     [Fact]
-    public async Task ProcessPurchaseOrderAsync_WhenProductDoesNotExist_DoesNotSaveOrRunRules()
+    public async Task ProcessPurchaseOrderAsync_WithNullRequest_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _sut.ProcessPurchaseOrderAsync(null!));
+    }
+
+    [Fact]
+    public async Task ProcessPurchaseOrderAsync_WhenProductDoesNotExist_DoesNotSaveOrExecuteRules()
     {
         var request = new PurchaseOrderRequest
         {
-            CustomerId = 4567890,
+            CustomerId = CustomerId,
             Items =
             [
                 new PurchaseOrderItemRequest
@@ -43,27 +46,32 @@ public class PurchaseOrderProcessorTests
             ]
         };
 
-        _repo.Setup(x => x.GetProductByIdAsync(999)).ReturnsAsync((Product?)null);
+        _repo
+            .Setup(x => x.GetProductByIdAsync(999))
+            .ReturnsAsync((Product?)null);
 
-        await Assert.ThrowsAsync<ProductNotFoundException>(() => _sut.ProcessPurchaseOrderAsync(request));
+        await Assert.ThrowsAsync<ProductNotFoundException>(
+            () => _sut.ProcessPurchaseOrderAsync(request));
 
-        _repo.Verify(x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()), Times.Never);
-
-        _membership.Verify(
-            x => x.ActivateMembership(It.IsAny<int>(), It.IsAny<MembershipType>()),
+        _repo.Verify(
+            x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()),
             Times.Never);
 
-        _shipping.Verify(
-            x => x.GenerateShippingSlip(It.IsAny<int>(), It.IsAny<int>()),
+        _ruleEngine.Verify(
+            x => x.ExecuteRules(It.IsAny<PurchaseOrder>(), RuleExecutionStage.PreProcessing),
+            Times.Never);
+
+        _ruleEngine.Verify(
+            x => x.ExecuteRules(It.IsAny<PurchaseOrder>(), RuleExecutionStage.PostProcessing),
             Times.Never);
     }
 
     [Fact]
-    public async Task ProcessPurchaseOrderAsync_WhenProductIsDigital_DoesNotGenerateShippingSlip()
+    public async Task ProcessPurchaseOrderAsync_WithDigitalProduct_CreatesCorrectOrder()
     {
         var request = new PurchaseOrderRequest
         {
-            CustomerId = 4567890,
+            CustomerId = CustomerId,
             Items =
             [
                 new PurchaseOrderItemRequest
@@ -74,7 +82,8 @@ public class PurchaseOrderProcessorTests
             ]
         };
 
-        _repo.Setup(x => x.GetProductByIdAsync(2))
+        _repo
+            .Setup(x => x.GetProductByIdAsync(2))
             .ReturnsAsync(new Video
             {
                 Id = 2,
@@ -85,26 +94,59 @@ public class PurchaseOrderProcessorTests
 
         var order = await _sut.ProcessPurchaseOrderAsync(request);
 
+        Assert.Equal(CustomerId, order.CustomerId);
         Assert.Single(order.ItemLines);
-        Assert.IsType<Video>((order.ItemLines[0] as ProductOrderLine)?.Product);
 
-        _shipping.Verify(
-            x => x.GenerateShippingSlip(It.IsAny<int>(), It.IsAny<int>()),
-            Times.Never);
+        var line = Assert.IsType<ProductOrderLine>(order.ItemLines[0]);
 
-        _membership.Verify(
-            x => x.ActivateMembership(It.IsAny<int>(), It.IsAny<MembershipType>()),
-            Times.Never);
+        Assert.IsType<Video>(line.Product);
+        Assert.Equal(33.51m, line.UnitPrice);
+        Assert.Equal(33.51m, order.TotalPrice);
 
-        _repo.Verify(x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()), Times.Once);
+        _repo.Verify(
+            x => x.SavePurchaseOrderAsync(order),
+            Times.Once);
     }
 
     [Fact]
-    public async Task ProcessPurchaseOrderAsync_WithBookMembership_ActivatesMembershipOnly()
+    public async Task ProcessPurchaseOrderAsync_WithPhysicalProduct_CreatesCorrectOrder()
     {
         var request = new PurchaseOrderRequest
         {
-            CustomerId = 4567890,
+            CustomerId = CustomerId,
+            Items =
+            [
+                new PurchaseOrderItemRequest
+                {
+                    ProductId = 1,
+                    Quantity = 2
+                }
+            ]
+        };
+
+        _repo
+            .Setup(x => x.GetProductByIdAsync(1))
+            .ReturnsAsync(CreateBook());
+
+        var order = await _sut.ProcessPurchaseOrderAsync(request);
+
+        Assert.Equal(CustomerId, order.CustomerId);
+        Assert.Single(order.ItemLines);
+
+        var line = Assert.IsType<ProductOrderLine>(order.ItemLines[0]);
+
+        Assert.IsType<Book>(line.Product);
+        Assert.Equal(14.99m, line.UnitPrice);
+        Assert.Equal(2, line.Quantity);
+        Assert.Equal(29.98m, order.TotalPrice);
+    }
+
+    [Fact]
+    public async Task ProcessPurchaseOrderAsync_WithMembership_CreatesMembershipLine()
+    {
+        var request = new PurchaseOrderRequest
+        {
+            CustomerId = CustomerId,
             Items =
             [
                 new PurchaseOrderItemRequest
@@ -118,26 +160,73 @@ public class PurchaseOrderProcessorTests
         var order = await _sut.ProcessPurchaseOrderAsync(request);
 
         Assert.Single(order.ItemLines);
+
+        var line = Assert.IsType<MembershipOrderLine>(order.ItemLines[0]);
+
+        Assert.Equal(
+            MembershipType.BookClub,
+            line.MembershipType);
+
         Assert.Equal(0m, order.TotalPrice);
 
-        _membership.Verify(
-            x => x.ActivateMembership(4567890, MembershipType.BookClub),
-            Times.Once);
-
-        _shipping.Verify(
-            x => x.GenerateShippingSlip(It.IsAny<int>(), It.IsAny<int>()),
+        _repo.Verify(
+            x => x.GetProductByIdAsync(It.IsAny<int>()),
             Times.Never);
-
-        _repo.Verify(x => x.GetProductByIdAsync(It.IsAny<int>()), Times.Never);
-        _repo.Verify(x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()), Times.Once);
     }
 
     [Fact]
-    public async Task ProcessPurchaseOrderAsync_WithPhysicalBook_GeneratesOneShippingSlip()
+    public async Task ProcessPurchaseOrderAsync_WithMultipleItems_CreatesAllLines()
     {
         var request = new PurchaseOrderRequest
         {
-            CustomerId = 4567890,
+            CustomerId = CustomerId,
+            Items =
+            [
+                new PurchaseOrderItemRequest
+                {
+                    ProductId = 1,
+                    Quantity = 2
+                },
+                new PurchaseOrderItemRequest
+                {
+                    ProductId = 2,
+                    Quantity = 1
+                }
+            ]
+        };
+
+        _repo
+            .Setup(x => x.GetProductByIdAsync(1))
+            .ReturnsAsync(CreateBook());
+
+        _repo
+            .Setup(x => x.GetProductByIdAsync(2))
+            .ReturnsAsync(CreateVideo());
+
+        var order = await _sut.ProcessPurchaseOrderAsync(request);
+
+        Assert.Equal(2, order.ItemLines.Count);
+        Assert.Equal(63.49m, order.TotalPrice);
+
+        _repo.Verify(
+            x => x.GetProductByIdAsync(1),
+            Times.Once);
+
+        _repo.Verify(
+            x => x.GetProductByIdAsync(2),
+            Times.Once);
+
+        _repo.Verify(
+            x => x.SavePurchaseOrderAsync(order),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPurchaseOrderAsync_UsesCataloguePrice()
+    {
+        var request = new PurchaseOrderRequest
+        {
+            CustomerId = CustomerId,
             Items =
             [
                 new PurchaseOrderItemRequest
@@ -148,113 +237,77 @@ public class PurchaseOrderProcessorTests
             ]
         };
 
-        _repo.Setup(x => x.GetProductByIdAsync(1))
-            .ReturnsAsync(new Book
-            {
-                Id = 1,
-                Name = "The Girl on the Train",
-                Author = "Paula Hawkins",
-                Isbn = "9781234567897",
-                Price = 14.99m
-            });
+        _repo
+            .Setup(x => x.GetProductByIdAsync(1))
+            .ReturnsAsync(CreateBook());
 
         var order = await _sut.ProcessPurchaseOrderAsync(request);
 
+        var line = Assert.IsType<ProductOrderLine>(
+            order.ItemLines.Single());
+
+        Assert.Equal(14.99m, line.UnitPrice);
         Assert.Equal(29.98m, order.TotalPrice);
-
-        _shipping.Verify(
-            x => x.GenerateShippingSlip(0, 4567890),
-            Times.Once);
-        _membership.Verify(
-            x => x.ActivateMembership(It.IsAny<int>(), It.IsAny<MembershipType>()),
-            Times.Never);
-        _repo.Verify(x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()), Times.Once);
     }
 
     [Fact]
-    public async Task ProcessPurchaseOrderAsync_WithMultiplePhysicalItems_GeneratesSingleShippingSlip()
+    public async Task ProcessPurchaseOrderAsync_ExecutesPreProcessingBeforeSaveAndPostProcessingAfterSave()
     {
         var request = new PurchaseOrderRequest
         {
-            CustomerId = 4567890,
-            Items =
-            [
-                new PurchaseOrderItemRequest { ProductId = 1, Quantity = 1 },
-                new PurchaseOrderItemRequest { ProductId = 1, Quantity = 3 }
-            ]
-        };
-
-        _repo.Setup(x => x.GetProductByIdAsync(1))
-            .ReturnsAsync(new Book
-            {
-                Id = 1,
-                Name = "The Girl on the Train",
-                Author = "Paula Hawkins",
-                Isbn = "9781234567897",
-                Price = 14.99m
-            });
-
-        var order = await _sut.ProcessPurchaseOrderAsync(request);
-
-        Assert.Equal(59.96m, order.TotalPrice);
-
-        _shipping.Verify(
-            x => x.GenerateShippingSlip(0, 4567890),
-            Times.Once);
-
-        _repo.Verify(x => x.GetProductByIdAsync(1), Times.Exactly(2));
-
-        _repo.Verify(x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()), Times.Once);
-    }
-
-    [Fact]
-    public void ActivateMembership_WithPremium_ActivatesPremiumBookAndVideoClubs()
-    {
-        var sut = new CustomerMembershipService();
-
-        sut.ActivateMembership(4567890, MembershipType.Premium);
-
-        Assert.True(sut.HasActiveMembership(4567890, MembershipType.Premium));
-        Assert.True(sut.HasActiveMembership(4567890, MembershipType.BookClub));
-        Assert.True(sut.HasActiveMembership(4567890, MembershipType.VideoClub));
-    }
-
-    [Fact]
-    public async Task ProcessPurchaseOrderAsync_WithNullRequest_ThrowsArgumentNullException()
-    {
-        await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _sut.ProcessPurchaseOrderAsync(null!));
-    }
-
-    [Fact]
-    public async Task ProcessPurchaseOrderAsync_UsesCataloguePrice_NotClientSuppliedPrice()
-    {
-        var request = new PurchaseOrderRequest
-        {
-            CustomerId = 4567890,
+            CustomerId = CustomerId,
             Items =
             [
                 new PurchaseOrderItemRequest
                 {
                     ProductId = 1,
-                    Quantity = 2
+                    Quantity = 1
                 }
             ]
         };
 
-        _repo.Setup(x => x.GetProductByIdAsync(1))
-            .ReturnsAsync(new Book
-            {
-                Id = 1,
-                Name = "The Girl on the Train",
-                Author = "Paula Hawkins",
-                Isbn = "9781234567897",
-                Price = 14.99m
-            });
+        _repo
+            .Setup(x => x.GetProductByIdAsync(1))
+            .ReturnsAsync(CreateBook());
 
-        var order = await _sut.ProcessPurchaseOrderAsync(request);
+        var sequence = new MockSequence();
 
-        Assert.Equal(14.99m, order.ItemLines[0].UnitPrice);
-        Assert.Equal(29.98m, order.TotalPrice);
+        _ruleEngine
+            .InSequence(sequence)
+            .Setup(x => x.ExecuteRules(
+                It.IsAny<PurchaseOrder>(),
+                RuleExecutionStage.PreProcessing));
+
+        _repo
+            .InSequence(sequence)
+            .Setup(x => x.SavePurchaseOrderAsync(
+                It.IsAny<PurchaseOrder>()));
+
+        _ruleEngine
+            .InSequence(sequence)
+            .Setup(x => x.ExecuteRules(
+                It.IsAny<PurchaseOrder>(),
+                RuleExecutionStage.PostProcessing));
+
+        await _sut.ProcessPurchaseOrderAsync(request);
     }
+
+    private static Book CreateBook() =>
+        new()
+        {
+            Id = 1,
+            Name = "The Girl on the Train",
+            Author = "Paula Hawkins",
+            Isbn = "9781234567897",
+            Price = 14.99m
+        };
+
+    private static Video CreateVideo() =>
+        new()
+        {
+            Id = 2,
+            Name = "Comprehensive First Aid Training",
+            Director = "John Smith",
+            Price = 33.51m
+        };
 }

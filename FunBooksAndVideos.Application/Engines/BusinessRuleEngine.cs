@@ -37,20 +37,20 @@ public class BusinessRuleEngine : IBusinessRuleEngine
         }
     }
 
-    public void ExecuteRules(PurchaseOrder order)
+    public void ExecuteRules(PurchaseOrder order, RuleExecutionStage stage)
     {
         ArgumentNullException.ThrowIfNull(order);
 
         // Lower numbers indicate higher priority
-        var sortedRules = _rules
-            .Where(rule => rule.ShouldApply(order))
+        var rules = _rules
+            .Where(rule => rule.Stage == stage && rule.ShouldApply(order))
             .OrderBy(rule => rule.Priority)
             .ToList();
 
-        _logger.LogInformation($"Executing {sortedRules.Count} rules for order {order.Id}");
+        _logger.LogInformation($"Executing {rules.Count} rules for order {order.Id}");
 
         var errors = new List<string>();
-        foreach (var rule in sortedRules)
+        foreach (var rule in rules)
         {
             try
             {

@@ -12,8 +12,9 @@ public class GenerateShippingSlipRule(IShippingSlipService shippingSlipService) 
 
     public string RuleId => "BR2_GenerateShippingSlip";
 
-    // Lower priority - can be done after membership activation
-    public int Priority => 20;
+    public RuleExecutionStage Stage => RuleExecutionStage.PostProcessing;
+
+    public int Priority => 10;
 
     public bool ShouldApply(PurchaseOrder order)
     {

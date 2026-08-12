@@ -35,9 +35,11 @@ public class PurchaseOrderProcessor(IBusinessRuleEngine ruleEngine, IPurchaseOrd
             }
         }
 
-        _ruleEngine.ExecuteRules(order);
+        _ruleEngine.ExecuteRules(order, RuleExecutionStage.PreProcessing);
 
         await repository.SavePurchaseOrderAsync(order);
+
+        _ruleEngine.ExecuteRules(order, RuleExecutionStage.PostProcessing);
 
         return order;
     }

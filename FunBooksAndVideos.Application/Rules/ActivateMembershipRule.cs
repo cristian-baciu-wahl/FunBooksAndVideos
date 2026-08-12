@@ -13,6 +13,8 @@ public class ActivateMembershipRule(ICustomerMembershipService membershipService
 
     public string RuleId => "BR1_MembershipActivation";
 
+    public RuleExecutionStage Stage => RuleExecutionStage.PreProcessing;
+
     public int Priority => 10; 
 
     public bool ShouldApply(PurchaseOrder order)
