@@ -28,6 +28,8 @@ public class CustomerMembershipServiceTests
         return dbContext;
     }
 
+
+    // Premium Membership should add both BookClub and VideoClub memberships to the customer.
     [Fact]
     public void ActivateMembership_WithPremium_AddsAllRequiredMemberships()
     {
@@ -43,11 +45,7 @@ public class CustomerMembershipServiceTests
             .Include(x => x.Memberships)
             .Single(x => x.Id == 4567890);
 
-        Assert.Equal(3, customer.Memberships.Count);
-
-        Assert.Contains(
-            customer.Memberships,
-            x => x.Type == MembershipType.Premium && x.IsActive);
+        Assert.Equal(2, customer.Memberships.Count);
 
         Assert.Contains(
             customer.Memberships,
