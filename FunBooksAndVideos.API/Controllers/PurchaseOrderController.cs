@@ -22,7 +22,7 @@ namespace FunBooksAndVideos.API.Controllers
             var order = await orderProcessor.ProcessPurchaseOrderAsync(request, cancellationToken);
 
             return CreatedAtAction(
-                nameof(GetPurchaseOrder),
+                nameof(CreatePurchaseOrder),
                 new { id = order.Id },
                 new
                 {
