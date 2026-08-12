@@ -2,12 +2,13 @@
 
 namespace FunBooksAndVideos.Application.Services;
 
-public class ShippingSlipService : IShippingSlipService
+public sealed class ShippingSlipService(IShippingSlipPublisher publisher) : IShippingSlipService
 {
-    public void GenerateShippingSlip(int purchaseOrderId, int customerId)
+    public async Task GenerateShippingSlip(
+        int purchaseOrderId,
+        int customerId,
+        CancellationToken cancellationToken = default)
     {
-        // Simulate shipping slip generation
-        // E.G - Append an event to an Azure service bus for a notification service that could send SMSs, emails, WhatsApp notifications, etc.
-        Console.WriteLine($"Shipping slip generated for Purchase Order {purchaseOrderId}, Customer {customerId}");
+        await publisher.PublishAsync(purchaseOrderId, customerId, cancellationToken);
     }
 }

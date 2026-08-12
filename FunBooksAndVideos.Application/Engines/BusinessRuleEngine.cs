@@ -37,7 +37,7 @@ public class BusinessRuleEngine : IBusinessRuleEngine
         }
     }
 
-    public void ExecuteRules(PurchaseOrder order, RuleExecutionStage stage)
+    public async Task ExecuteRulesAsync(PurchaseOrder order, RuleExecutionStage stage, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(order);
 
@@ -54,7 +54,7 @@ public class BusinessRuleEngine : IBusinessRuleEngine
         {
             try
             {
-                rule.Apply(order);
+                await rule.ApplyAsync(order, cancellationToken);
                 _logger.LogInformation($"Successfully applied rule: {rule.RuleId} to order {order.Id}");
             }
             catch (ArgumentException ex)

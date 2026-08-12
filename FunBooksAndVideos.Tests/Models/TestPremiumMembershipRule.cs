@@ -11,9 +11,11 @@ namespace FunBooksAndVideos.Tests.Models
 
         public RuleExecutionStage Stage => RuleExecutionStage.PreProcessing;
 
-        public void Apply(PurchaseOrder order)
+
+        public Task ApplyAsync(PurchaseOrder order, CancellationToken cancellationToken = default)
         {
             membershipService.ActivateMembership(order.CustomerId, MembershipType.Premium);
+            return Task.CompletedTask;
         }
 
         public bool ShouldApply(PurchaseOrder order)

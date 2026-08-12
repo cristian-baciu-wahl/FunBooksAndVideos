@@ -4,5 +4,5 @@ namespace FunBooksAndVideos.Application.Interfaces;
 
 public interface IPurchaseOrderService
 {
-    Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int id);
+    Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int id, CancellationToken cancellationToken);
 }

@@ -12,6 +12,7 @@ using FunBooksAndVideos.Infrastructure.Repositories;
 using FunBooksAndVideos.Infrastructure.Persistence;
 using FunBooksAndVideos.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using FunBooksAndVideos.Infrastructure.Publishers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,9 +24,9 @@ builder.Services.AddSwaggerGen();
 // Register core services
 builder.Services.AddScoped<IShippingSlipService, ShippingSlipService>();
 
-////non-durable persistence, until app starts - for production, we would use a DB 
-//builder.Services.AddSingleton<ICustomerMembershipService, CustomerMembershipService>();
-//builder.Services.AddSingleton<IPurchaseOrderRepository, PurchaseOrderRepository>();    
+// Register the in-memory shipping slip publisher as a singleton for persistence across requests
+builder.Services.AddSingleton<IShippingSlipPublisher, ShippingSlipPublisher>();
+builder.Services.AddScoped<IShippingSlipService, ShippingSlipService>();
 
 builder.Services.AddScoped<ICustomerMembershipService, EfCustomerMembershipService>();
 builder.Services.AddScoped<IPurchaseOrderRepository, EfPurchaseOrderRepository>();

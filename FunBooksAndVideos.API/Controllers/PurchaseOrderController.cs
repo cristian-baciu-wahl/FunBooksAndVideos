@@ -15,9 +15,11 @@ namespace FunBooksAndVideos.API.Controllers
     {
         [HttpPost]
         [ServiceFilter(typeof(ValidationFilter<PurchaseOrderRequest>))]
-        public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderRequest request)
+        public async Task<IActionResult> CreatePurchaseOrder(
+            [FromBody] PurchaseOrderRequest request, 
+            CancellationToken cancellationToken)
         {
-            var order = await orderProcessor.ProcessPurchaseOrderAsync(request);
+            var order = await orderProcessor.ProcessPurchaseOrderAsync(request, cancellationToken);
 
             return CreatedAtAction(
                 nameof(GetPurchaseOrder),
@@ -32,11 +34,11 @@ namespace FunBooksAndVideos.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetPurchaseOrder(int id)
+        public async Task<IActionResult> GetPurchaseOrder(int id, CancellationToken cancellationToken)
         {
             if (id <= 0) return BadRequest(new { error = "Invalid order ID" });
 
-            var order = await orderService.GetPurchaseOrderByIdAsync(id);
+            var order = await orderService.GetPurchaseOrderByIdAsync(id, cancellationToken);
             if (order == null) return NotFound(new { error = $"Purchase order with ID {id} not found" });
 
             return Ok(order.ToResponse());

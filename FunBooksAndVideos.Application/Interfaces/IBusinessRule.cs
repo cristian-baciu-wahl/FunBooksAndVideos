@@ -24,5 +24,7 @@ public interface IBusinessRule
 
     bool ShouldApply(PurchaseOrder order);
 
-    void Apply(PurchaseOrder order);
+    Task ApplyAsync(
+       PurchaseOrder order,
+       CancellationToken cancellationToken = default);
 }

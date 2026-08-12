@@ -2,5 +2,5 @@
 
 public interface IShippingSlipService
 {
-    void GenerateShippingSlip(int purchaseOrderId, int customerId);
+    Task GenerateShippingSlip(int purchaseOrderId, int customerId, CancellationToken cancellationToken);
 }

@@ -9,8 +9,6 @@ namespace FunBooksAndVideos.Application.Rules;
 /// </summary>
 public class ActivateMembershipRule(ICustomerMembershipService membershipService) : IBusinessRule
 {
-    private readonly ICustomerMembershipService _membershipService = membershipService;
-
     public string RuleId => "BR1_MembershipActivation";
 
     public RuleExecutionStage Stage => RuleExecutionStage.PreProcessing;
@@ -22,13 +20,22 @@ public class ActivateMembershipRule(ICustomerMembershipService membershipService
         return order.ItemLines.OfType<MembershipOrderLine>().Any();
     }
 
-    public void Apply(PurchaseOrder order)
+    public async Task ApplyAsync(
+      PurchaseOrder order,
+      CancellationToken cancellationToken = default)
     {
-        var membershipLines = order.ItemLines.OfType<MembershipOrderLine>().ToList();
+        var membershipLines = order.ItemLines
+            .OfType<MembershipOrderLine>()
+            .ToList();
+
         foreach (var line in membershipLines)
         {
-            _membershipService.ActivateMembership(order.CustomerId, line.MembershipType);
+            membershipService.ActivateMembership(
+                order.CustomerId,
+                line.MembershipType);
         }
+
+        await Task.CompletedTask;
     }
 }
 

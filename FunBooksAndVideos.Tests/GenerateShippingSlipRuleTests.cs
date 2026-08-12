@@ -9,7 +9,7 @@ public class GenerateShippingSlipRuleTests
 {
     private const int CustomerId = 4567890;
 
-    private readonly Mock<IShippingSlipService> _shipping = new();
+    private readonly Mock<IShippingSlipPublisher> _shipping = new();
 
     private readonly GenerateShippingSlipRule _sut;
 
@@ -46,21 +46,21 @@ public class GenerateShippingSlipRuleTests
     }
 
     [Fact]
-    public void Apply_PassesOrderIdAndCustomerIdToShippingService()
+    public async Task Apply_PassesOrderIdAndCustomerIdToShippingService()
     {
         var order = CreateOrderWithBook();
 
-        _sut.Apply(order);
+        await _sut.ApplyAsync(order, CancellationToken.None);
 
         _shipping.Verify(
-            x => x.GenerateShippingSlip(
+            x => x.PublishAsync(
                 order.Id,
                 CustomerId),
             Times.Once);
     }
 
     [Fact]
-    public void Apply_WithMultiplePhysicalItems_GeneratesOneShippingSlip()
+    public async Task Apply_WithMultiplePhysicalItems_GeneratesOneShippingSlip()
     {
         var order = new PurchaseOrder(CustomerId);
 
@@ -69,10 +69,10 @@ public class GenerateShippingSlipRuleTests
         order.ItemLines.Add(new ProductOrderLine(book, 1));
         order.ItemLines.Add(new ProductOrderLine(book, 3));
 
-        _sut.Apply(order);
+        await _sut.ApplyAsync(order, CancellationToken.None);
 
         _shipping.Verify(
-            x => x.GenerateShippingSlip(
+            x => x.PublishAsync(
                 order.Id,
                 CustomerId),
             Times.Once);

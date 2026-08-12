@@ -11,7 +11,7 @@ public class BusinessRuleEngineTests
     private readonly Mock<ILogger<BusinessRuleEngine>> _logger = new();
 
     [Fact]
-    public void ExecuteRules_ExecutesOnlyRulesForRequestedStage()
+    public async Task ExecuteRules_ExecutesOnlyRulesForRequestedStage()
     {
         var preRule = new Mock<IBusinessRule>();
         preRule.SetupGet(x => x.RuleId).Returns("PRE");
@@ -28,14 +28,14 @@ public class BusinessRuleEngineTests
         var engine = CreateEngine(preRule.Object, postRule.Object);
         var order = new PurchaseOrder(4567890);
 
-        engine.ExecuteRules(order, RuleExecutionStage.PreProcessing);
+        await engine.ExecuteRulesAsync(order, RuleExecutionStage.PreProcessing, CancellationToken.None);
 
-        preRule.Verify(x => x.Apply(order), Times.Once);
-        postRule.Verify(x => x.Apply(It.IsAny<PurchaseOrder>()), Times.Never);
+        preRule.Verify(x => x.ApplyAsync(order, CancellationToken.None), Times.Once);
+        postRule.Verify(x => x.ApplyAsync(It.IsAny<PurchaseOrder>(), CancellationToken.None), Times.Never);
     }
 
     [Fact]
-    public void ExecuteRules_ExecutesRulesInPriorityOrder()
+    public async Task ExecuteRules_ExecutesRulesInPriorityOrder()
     {
         var executionOrder = new List<string>();
 
@@ -53,9 +53,10 @@ public class BusinessRuleEngineTests
 
         var engine = CreateEngine(lowPriority.Object, highPriority.Object);
 
-        engine.ExecuteRules(
+        await engine.ExecuteRulesAsync(
             new PurchaseOrder(4567890),
-            RuleExecutionStage.PreProcessing);
+            RuleExecutionStage.PreProcessing,
+            CancellationToken.None);
 
         Assert.Equal(
             ["HIGH", "LOW"],
@@ -63,7 +64,7 @@ public class BusinessRuleEngineTests
     }
 
     [Fact]
-    public void ExecuteRules_DoesNotExecuteRule_WhenShouldApplyReturnsFalse()
+    public async Task ExecuteRules_DoesNotExecuteRule_WhenShouldApplyReturnsFalse()
     {
         var rule = new Mock<IBusinessRule>();
 
@@ -75,17 +76,18 @@ public class BusinessRuleEngineTests
 
         var engine = CreateEngine(rule.Object);
 
-        engine.ExecuteRules(
+        await engine.ExecuteRulesAsync(
             new PurchaseOrder(4567890),
-            RuleExecutionStage.PreProcessing);
+            RuleExecutionStage.PreProcessing,
+            CancellationToken.None);
 
         rule.Verify(
-            x => x.Apply(It.IsAny<PurchaseOrder>()),
+            x => x.ApplyAsync(It.IsAny<PurchaseOrder>(), CancellationToken.None),
             Times.Never);
     }
 
     [Fact]
-    public void ExecuteRules_ThrowsAggregateException_WhenRuleFails()
+    public async Task ExecuteRules_ThrowsAggregateException_WhenRuleFails()
     {
         var rule = new Mock<IBusinessRule>();
 
@@ -95,22 +97,23 @@ public class BusinessRuleEngineTests
         rule.Setup(x => x.ShouldApply(It.IsAny<PurchaseOrder>()))
             .Returns(true);
 
-        rule.Setup(x => x.Apply(It.IsAny<PurchaseOrder>()))
+        rule.Setup(x => x.ApplyAsync(It.IsAny<PurchaseOrder>(), CancellationToken.None))
             .Throws(new InvalidOperationException("Something failed"));
 
         var engine = CreateEngine(rule.Object);
 
-        var exception = Assert.Throws<AggregateException>(() =>
-            engine.ExecuteRules(
+        var exception = await Assert.ThrowsAsync<AggregateException>(() =>
+            engine.ExecuteRulesAsync(
                 new PurchaseOrder(4567890),
-                RuleExecutionStage.PreProcessing));
+                RuleExecutionStage.PreProcessing,
+                CancellationToken.None));
 
         Assert.Contains("FAILING_RULE", exception.Message);
         Assert.Contains("Something failed", exception.Message);
     }
 
     [Fact]
-    public void ExecuteRules_ContinuesExecutingRemainingRules_WhenOneFails()
+    public async Task ExecuteRules_ContinuesExecutingRemainingRules_WhenOneFails()
     {
         var executionOrder = new List<string>();
 
@@ -121,7 +124,7 @@ public class BusinessRuleEngineTests
         failingRule.Setup(x => x.ShouldApply(It.IsAny<PurchaseOrder>()))
             .Returns(true);
 
-        failingRule.Setup(x => x.Apply(It.IsAny<PurchaseOrder>()))
+        failingRule.Setup(x => x.ApplyAsync(It.IsAny<PurchaseOrder>()))
             .Callback(() => executionOrder.Add("FAIL"))
             .Throws(new InvalidOperationException("Failure"));
 
@@ -135,10 +138,11 @@ public class BusinessRuleEngineTests
             failingRule.Object,
             successfulRule.Object);
 
-        Assert.Throws<AggregateException>(() =>
-            engine.ExecuteRules(
+        await Assert.ThrowsAsync<AggregateException>(() =>
+            engine.ExecuteRulesAsync(
                 new PurchaseOrder(4567890),
-                RuleExecutionStage.PreProcessing));
+                RuleExecutionStage.PreProcessing,
+                CancellationToken.None));
 
         Assert.Equal(
             ["FAIL", "SUCCESS"],
@@ -174,7 +178,7 @@ public class BusinessRuleEngineTests
     }
 
     [Fact]
-    public void RemoveRule_RemovesExistingRule()
+    public async Task RemoveRule_RemovesExistingRule()
     {
         var rule = CreateRule(
             "RULE",
@@ -185,24 +189,26 @@ public class BusinessRuleEngineTests
 
         engine.RemoveRule("RULE");
 
-        engine.ExecuteRules(
+        await engine.ExecuteRulesAsync(
             new PurchaseOrder(4567890),
-            RuleExecutionStage.PreProcessing);
+            RuleExecutionStage.PreProcessing,
+            CancellationToken.None);
 
         rule.Verify(
-            x => x.Apply(It.IsAny<PurchaseOrder>()),
+            x => x.ApplyAsync(It.IsAny<PurchaseOrder>(), CancellationToken.None),
             Times.Never);
     }
 
     [Fact]
-    public void ExecuteRules_Throws_WhenOrderIsNull()
+    public async Task ExecuteRules_Throws_WhenOrderIsNull()
     {
         var engine = CreateEngine();
 
-        Assert.Throws<ArgumentNullException>(() =>
-            engine.ExecuteRules(
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            engine.ExecuteRulesAsync(
                 null!,
-                RuleExecutionStage.PreProcessing));
+                RuleExecutionStage.PreProcessing,
+                CancellationToken.None));
     }
 
     private BusinessRuleEngine CreateEngine(
@@ -229,7 +235,7 @@ public class BusinessRuleEngineTests
 
         if (executionOrder is not null)
         {
-            rule.Setup(x => x.Apply(It.IsAny<PurchaseOrder>()))
+            rule.Setup(x => x.ApplyAsync(It.IsAny<PurchaseOrder>(), CancellationToken.None))
                 .Callback(() => executionOrder.Add(id));
         }
 

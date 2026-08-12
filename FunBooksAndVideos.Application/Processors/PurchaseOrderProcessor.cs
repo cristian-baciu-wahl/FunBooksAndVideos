@@ -12,7 +12,9 @@ public class PurchaseOrderProcessor(IBusinessRuleEngine ruleEngine, IPurchaseOrd
 {
     private readonly IBusinessRuleEngine _ruleEngine = ruleEngine;
 
-    public async Task<PurchaseOrder> ProcessPurchaseOrderAsync(PurchaseOrderRequest request)
+    public async Task<PurchaseOrder> ProcessPurchaseOrderAsync(
+        PurchaseOrderRequest request, 
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -22,7 +24,7 @@ public class PurchaseOrderProcessor(IBusinessRuleEngine ruleEngine, IPurchaseOrd
         {
             if (item.ProductId.HasValue)
             {
-                var product = await repository.GetProductByIdAsync(item.ProductId.Value)
+                var product = await repository.GetProductByIdAsync(item.ProductId.Value, cancellationToken)
                     ?? throw new ProductNotFoundException(item.ProductId.Value);
 
                 order.ItemLines.Add(new ProductOrderLine(product, item.Quantity));
@@ -35,11 +37,11 @@ public class PurchaseOrderProcessor(IBusinessRuleEngine ruleEngine, IPurchaseOrd
             }
         }
 
-        _ruleEngine.ExecuteRules(order, RuleExecutionStage.PreProcessing);
+        await _ruleEngine.ExecuteRulesAsync(order, RuleExecutionStage.PreProcessing, cancellationToken);
 
-        await repository.SavePurchaseOrderAsync(order);
+        await repository.SavePurchaseOrderAsync(order, cancellationToken);
 
-        _ruleEngine.ExecuteRules(order, RuleExecutionStage.PostProcessing);
+        await _ruleEngine.ExecuteRulesAsync(order, RuleExecutionStage.PostProcessing, cancellationToken);
 
         return order;
     }

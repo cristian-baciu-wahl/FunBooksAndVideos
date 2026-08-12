@@ -11,6 +11,9 @@ public class PurchaseOrderProcessorTests
 {
     private const int CustomerId = 4567890;
 
+    private readonly CancellationToken _cancellationToken =
+        new CancellationTokenSource().Token;
+
     private readonly Mock<IPurchaseOrderRepository> _repo = new();
     private readonly Mock<IBusinessRuleEngine> _ruleEngine = new();
 
@@ -27,7 +30,9 @@ public class PurchaseOrderProcessorTests
     public async Task ProcessPurchaseOrderAsync_WithNullRequest_ThrowsArgumentNullException()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _sut.ProcessPurchaseOrderAsync(null!));
+            () => _sut.ProcessPurchaseOrderAsync(
+                null!,
+                _cancellationToken));
     }
 
     [Fact]
@@ -47,22 +52,34 @@ public class PurchaseOrderProcessorTests
         };
 
         _repo
-            .Setup(x => x.GetProductByIdAsync(999))
+            .Setup(x => x.GetProductByIdAsync(
+                999,
+                _cancellationToken))
             .ReturnsAsync((Product?)null);
 
         await Assert.ThrowsAsync<ProductNotFoundException>(
-            () => _sut.ProcessPurchaseOrderAsync(request));
+            () => _sut.ProcessPurchaseOrderAsync(
+                request,
+                _cancellationToken));
 
         _repo.Verify(
-            x => x.SavePurchaseOrderAsync(It.IsAny<PurchaseOrder>()),
+            x => x.SavePurchaseOrderAsync(
+                It.IsAny<PurchaseOrder>(),
+                _cancellationToken),
             Times.Never);
 
         _ruleEngine.Verify(
-            x => x.ExecuteRules(It.IsAny<PurchaseOrder>(), RuleExecutionStage.PreProcessing),
+            x => x.ExecuteRulesAsync(
+                It.IsAny<PurchaseOrder>(),
+                RuleExecutionStage.PreProcessing,
+                _cancellationToken),
             Times.Never);
 
         _ruleEngine.Verify(
-            x => x.ExecuteRules(It.IsAny<PurchaseOrder>(), RuleExecutionStage.PostProcessing),
+            x => x.ExecuteRulesAsync(
+                It.IsAny<PurchaseOrder>(),
+                RuleExecutionStage.PostProcessing,
+                _cancellationToken),
             Times.Never);
     }
 
@@ -83,28 +100,29 @@ public class PurchaseOrderProcessorTests
         };
 
         _repo
-            .Setup(x => x.GetProductByIdAsync(2))
-            .ReturnsAsync(new Video
-            {
-                Id = 2,
-                Name = "Comprehensive First Aid Training",
-                Director = "John Smith",
-                Price = 33.51m
-            });
+            .Setup(x => x.GetProductByIdAsync(
+                2,
+                _cancellationToken))
+            .ReturnsAsync(CreateVideo());
 
-        var order = await _sut.ProcessPurchaseOrderAsync(request);
+        var order = await _sut.ProcessPurchaseOrderAsync(
+            request,
+            _cancellationToken);
 
         Assert.Equal(CustomerId, order.CustomerId);
         Assert.Single(order.ItemLines);
 
-        var line = Assert.IsType<ProductOrderLine>(order.ItemLines[0]);
+        var line = Assert.IsType<ProductOrderLine>(
+            order.ItemLines[0]);
 
         Assert.IsType<Video>(line.Product);
         Assert.Equal(33.51m, line.UnitPrice);
         Assert.Equal(33.51m, order.TotalPrice);
 
         _repo.Verify(
-            x => x.SavePurchaseOrderAsync(order),
+            x => x.SavePurchaseOrderAsync(
+                order,
+                _cancellationToken),
             Times.Once);
     }
 
@@ -125,15 +143,20 @@ public class PurchaseOrderProcessorTests
         };
 
         _repo
-            .Setup(x => x.GetProductByIdAsync(1))
+            .Setup(x => x.GetProductByIdAsync(
+                1,
+                _cancellationToken))
             .ReturnsAsync(CreateBook());
 
-        var order = await _sut.ProcessPurchaseOrderAsync(request);
+        var order = await _sut.ProcessPurchaseOrderAsync(
+            request,
+            _cancellationToken);
 
         Assert.Equal(CustomerId, order.CustomerId);
         Assert.Single(order.ItemLines);
 
-        var line = Assert.IsType<ProductOrderLine>(order.ItemLines[0]);
+        var line = Assert.IsType<ProductOrderLine>(
+            order.ItemLines[0]);
 
         Assert.IsType<Book>(line.Product);
         Assert.Equal(14.99m, line.UnitPrice);
@@ -157,11 +180,14 @@ public class PurchaseOrderProcessorTests
             ]
         };
 
-        var order = await _sut.ProcessPurchaseOrderAsync(request);
+        var order = await _sut.ProcessPurchaseOrderAsync(
+            request,
+            _cancellationToken);
 
         Assert.Single(order.ItemLines);
 
-        var line = Assert.IsType<MembershipOrderLine>(order.ItemLines[0]);
+        var line = Assert.IsType<MembershipOrderLine>(
+            order.ItemLines[0]);
 
         Assert.Equal(
             MembershipType.BookClub,
@@ -170,7 +196,9 @@ public class PurchaseOrderProcessorTests
         Assert.Equal(0m, order.TotalPrice);
 
         _repo.Verify(
-            x => x.GetProductByIdAsync(It.IsAny<int>()),
+            x => x.GetProductByIdAsync(
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -196,28 +224,40 @@ public class PurchaseOrderProcessorTests
         };
 
         _repo
-            .Setup(x => x.GetProductByIdAsync(1))
+            .Setup(x => x.GetProductByIdAsync(
+                1,
+                _cancellationToken))
             .ReturnsAsync(CreateBook());
 
         _repo
-            .Setup(x => x.GetProductByIdAsync(2))
+            .Setup(x => x.GetProductByIdAsync(
+                2,
+                _cancellationToken))
             .ReturnsAsync(CreateVideo());
 
-        var order = await _sut.ProcessPurchaseOrderAsync(request);
+        var order = await _sut.ProcessPurchaseOrderAsync(
+            request,
+            _cancellationToken);
 
         Assert.Equal(2, order.ItemLines.Count);
         Assert.Equal(63.49m, order.TotalPrice);
 
         _repo.Verify(
-            x => x.GetProductByIdAsync(1),
+            x => x.GetProductByIdAsync(
+                1,
+                _cancellationToken),
             Times.Once);
 
         _repo.Verify(
-            x => x.GetProductByIdAsync(2),
+            x => x.GetProductByIdAsync(
+                2,
+                _cancellationToken),
             Times.Once);
 
         _repo.Verify(
-            x => x.SavePurchaseOrderAsync(order),
+            x => x.SavePurchaseOrderAsync(
+                order,
+                _cancellationToken),
             Times.Once);
     }
 
@@ -238,10 +278,14 @@ public class PurchaseOrderProcessorTests
         };
 
         _repo
-            .Setup(x => x.GetProductByIdAsync(1))
+            .Setup(x => x.GetProductByIdAsync(
+                1,
+                _cancellationToken))
             .ReturnsAsync(CreateBook());
 
-        var order = await _sut.ProcessPurchaseOrderAsync(request);
+        var order = await _sut.ProcessPurchaseOrderAsync(
+            request,
+            _cancellationToken);
 
         var line = Assert.IsType<ProductOrderLine>(
             order.ItemLines.Single());
@@ -267,29 +311,136 @@ public class PurchaseOrderProcessorTests
         };
 
         _repo
-            .Setup(x => x.GetProductByIdAsync(1))
+            .Setup(x => x.GetProductByIdAsync(
+                1,
+                _cancellationToken))
             .ReturnsAsync(CreateBook());
 
         var sequence = new MockSequence();
 
         _ruleEngine
             .InSequence(sequence)
-            .Setup(x => x.ExecuteRules(
+            .Setup(x => x.ExecuteRulesAsync(
                 It.IsAny<PurchaseOrder>(),
-                RuleExecutionStage.PreProcessing));
+                RuleExecutionStage.PreProcessing,
+                _cancellationToken));
 
         _repo
             .InSequence(sequence)
             .Setup(x => x.SavePurchaseOrderAsync(
-                It.IsAny<PurchaseOrder>()));
+                It.IsAny<PurchaseOrder>(),
+                _cancellationToken));
 
         _ruleEngine
             .InSequence(sequence)
-            .Setup(x => x.ExecuteRules(
+            .Setup(x => x.ExecuteRulesAsync(
                 It.IsAny<PurchaseOrder>(),
-                RuleExecutionStage.PostProcessing));
+                RuleExecutionStage.PostProcessing,
+                _cancellationToken));
 
-        await _sut.ProcessPurchaseOrderAsync(request);
+        await _sut.ProcessPurchaseOrderAsync(
+            request,
+            _cancellationToken);
+
+        _ruleEngine.Verify(
+            x => x.ExecuteRulesAsync(
+                It.IsAny<PurchaseOrder>(),
+                RuleExecutionStage.PreProcessing,
+                _cancellationToken),
+            Times.Once);
+
+        _repo.Verify(
+            x => x.SavePurchaseOrderAsync(
+                It.IsAny<PurchaseOrder>(),
+                _cancellationToken),
+            Times.Once);
+
+        _ruleEngine.Verify(
+            x => x.ExecuteRulesAsync(
+                It.IsAny<PurchaseOrder>(),
+                RuleExecutionStage.PostProcessing,
+                _cancellationToken),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPurchaseOrderAsync_PropagatesCancellationTokenToRepository()
+    {
+        var request = new PurchaseOrderRequest
+        {
+            CustomerId = CustomerId,
+            Items =
+            [
+                new PurchaseOrderItemRequest
+                {
+                    ProductId = 1,
+                    Quantity = 1
+                }
+            ]
+        };
+
+        _repo
+            .Setup(x => x.GetProductByIdAsync(
+                1,
+                _cancellationToken))
+            .ReturnsAsync(CreateBook());
+
+        await _sut.ProcessPurchaseOrderAsync(
+            request,
+            _cancellationToken);
+
+        _repo.Verify(
+            x => x.GetProductByIdAsync(
+                1,
+                _cancellationToken),
+            Times.Once);
+
+        _repo.Verify(
+            x => x.SavePurchaseOrderAsync(
+                It.IsAny<PurchaseOrder>(),
+                _cancellationToken),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPurchaseOrderAsync_PropagatesCancellationTokenToRuleEngine()
+    {
+        var request = new PurchaseOrderRequest
+        {
+            CustomerId = CustomerId,
+            Items =
+            [
+                new PurchaseOrderItemRequest
+                {
+                    ProductId = 1,
+                    Quantity = 1
+                }
+            ]
+        };
+
+        _repo
+            .Setup(x => x.GetProductByIdAsync(
+                1,
+                _cancellationToken))
+            .ReturnsAsync(CreateBook());
+
+        await _sut.ProcessPurchaseOrderAsync(
+            request,
+            _cancellationToken);
+
+        _ruleEngine.Verify(
+            x => x.ExecuteRulesAsync(
+                It.IsAny<PurchaseOrder>(),
+                RuleExecutionStage.PreProcessing,
+                _cancellationToken),
+            Times.Once);
+
+        _ruleEngine.Verify(
+            x => x.ExecuteRulesAsync(
+                It.IsAny<PurchaseOrder>(),
+                RuleExecutionStage.PostProcessing,
+                _cancellationToken),
+            Times.Once);
     }
 
     private static Book CreateBook() =>

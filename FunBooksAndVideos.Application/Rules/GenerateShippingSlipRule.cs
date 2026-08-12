@@ -4,17 +4,17 @@ using FunBooksAndVideos.Domain;
 namespace FunBooksAndVideos.Application.Rules;
 
 /// <summary>
-/// BR2: If the purchase order contains a physical product, a shipping slip has to be generated
+/// BR2: If the purchase order contains a physical product,
+/// a shipping slip has to be generated.
 /// </summary>
-public class GenerateShippingSlipRule(IShippingSlipService shippingSlipService) : IBusinessRule
+public sealed class GenerateShippingSlipRule(
+    IShippingSlipPublisher shippingSlipPublisher) : IBusinessRule
 {
-    private readonly IShippingSlipService _shippingSlipService = shippingSlipService;
-
     public string RuleId => "BR2_GenerateShippingSlip";
 
-    public RuleExecutionStage Stage => RuleExecutionStage.PostProcessing;
+    public int Priority => 20;
 
-    public int Priority => 10;
+    public RuleExecutionStage Stage => RuleExecutionStage.PostProcessing;
 
     public bool ShouldApply(PurchaseOrder order)
     {
@@ -23,8 +23,13 @@ public class GenerateShippingSlipRule(IShippingSlipService shippingSlipService) 
             .Any(line => line.Product.Type == ProductType.Physical);
     }
 
-    public void Apply(PurchaseOrder order)
+    public async Task ApplyAsync(
+        PurchaseOrder order,
+        CancellationToken cancellationToken = default)
     {
-        _shippingSlipService.GenerateShippingSlip(order.Id, order.CustomerId);
+        await shippingSlipPublisher.PublishAsync(
+            order.Id,
+            order.CustomerId,
+            cancellationToken);
     }
 }

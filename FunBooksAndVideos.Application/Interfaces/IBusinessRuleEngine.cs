@@ -10,7 +10,7 @@ public interface IBusinessRuleEngine
     /// <summary>
     /// Executes all applicable business rules for a purchase order
     /// </summary>
-    void ExecuteRules(PurchaseOrder order, RuleExecutionStage stage);
+    Task ExecuteRulesAsync(PurchaseOrder order, RuleExecutionStage stage, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Adds a rule to the engine

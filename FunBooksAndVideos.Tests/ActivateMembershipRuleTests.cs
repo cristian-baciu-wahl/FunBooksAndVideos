@@ -39,12 +39,12 @@ public class ActivateMembershipRuleTests
     }
 
     [Fact]
-    public void Apply_WithBookClub_ActivatesBookClub()
+    public async Task Apply_WithBookClub_ActivatesBookClub()
     {
         var order = CreateMembershipOrder(
             MembershipType.BookClub);
 
-        _sut.Apply(order);
+        await _sut.ApplyAsync(order);
 
         _membership.Verify(
             x => x.ActivateMembership(
@@ -54,12 +54,12 @@ public class ActivateMembershipRuleTests
     }
 
     [Fact]
-    public void Apply_WithVideoClub_ActivatesVideoClub()
+    public async Task Apply_WithVideoClub_ActivatesVideoClub()
     {
         var order = CreateMembershipOrder(
             MembershipType.VideoClub);
 
-        _sut.Apply(order);
+        await _sut.ApplyAsync(order);
 
         _membership.Verify(
             x => x.ActivateMembership(
@@ -69,12 +69,12 @@ public class ActivateMembershipRuleTests
     }
 
     [Fact]
-    public void Apply_WithPremium_ActivatesPremium()
+    public async Task Apply_WithPremium_ActivatesPremium()
     {
         var order = CreateMembershipOrder(
             MembershipType.Premium);
 
-        _sut.Apply(order);
+        await _sut.ApplyAsync(order);
 
         _membership.Verify(
             x => x.ActivateMembership(
@@ -84,7 +84,7 @@ public class ActivateMembershipRuleTests
     }
 
     [Fact]
-    public void Apply_WithMultipleMemberships_ActivatesEachMembership()
+    public async Task Apply_WithMultipleMemberships_ActivatesEachMembership()
     {
         var order = new PurchaseOrder(CustomerId);
 
@@ -94,7 +94,7 @@ public class ActivateMembershipRuleTests
         order.ItemLines.Add(
             new MembershipOrderLine(MembershipType.VideoClub));
 
-        _sut.Apply(order);
+        await _sut.ApplyAsync(order);
 
         _membership.Verify(
             x => x.ActivateMembership(

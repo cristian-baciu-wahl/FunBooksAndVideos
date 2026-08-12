@@ -5,8 +5,8 @@ namespace FunBooksAndVideos.Application.Services;
 
 public class PurchaseOrderService(IPurchaseOrderRepository repository) : IPurchaseOrderService
 {
-    public async Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int id)
+    public async Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await repository.GetPurchaseOrderByIdAsync(id);
+        return await repository.GetPurchaseOrderByIdAsync(id, cancellationToken);
     }
 }

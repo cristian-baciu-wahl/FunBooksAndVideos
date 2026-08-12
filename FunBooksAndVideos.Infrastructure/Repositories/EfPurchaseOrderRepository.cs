@@ -8,21 +8,21 @@ namespace FunBooksAndVideos.Infrastructure.Repositories;
 public sealed class EfPurchaseOrderRepository(AppDbContext dbContext)
     : IPurchaseOrderRepository
 {
-    public async Task<PurchaseOrder> SavePurchaseOrderAsync(PurchaseOrder order)
+    public async Task<PurchaseOrder> SavePurchaseOrderAsync(PurchaseOrder order, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(order);
 
         await dbContext.PurchaseOrders.AddAsync(order);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         return order;
     }
 
-    public async Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int id)
+    public async Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var order = await dbContext.PurchaseOrders
             .Include(purchaseOrder => purchaseOrder.ItemLines)
-            .SingleOrDefaultAsync(purchaseOrder => purchaseOrder.Id == id);
+            .SingleOrDefaultAsync(purchaseOrder => purchaseOrder.Id == id, cancellationToken);
 
         if (order is null)
         {
@@ -37,18 +37,16 @@ public sealed class EfPurchaseOrderRepository(AppDbContext dbContext)
 
         if (productIds.Count > 0)
         {
-            // Loading the products into this tracked context fixes up the Product
-            // navigation on each ProductOrderLine for the response mapper.
             await dbContext.Products
                 .Where(product => productIds.Contains(product.Id))
-                .LoadAsync();
+                .LoadAsync(cancellationToken);
         }
 
         return order;
     }
 
-    public Task<Product?> GetProductByIdAsync(int id) =>
-        dbContext.Products.SingleOrDefaultAsync(product => product.Id == id);
+    public Task<Product?> GetProductByIdAsync(int id, CancellationToken cancellationToken = default) =>
+        dbContext.Products.SingleOrDefaultAsync(product => product.Id == id, cancellationToken);
 
     public bool ProductExists(int id) =>
         dbContext.Products.Any(product => product.Id == id);

@@ -5,5 +5,5 @@ namespace FunBooksAndVideos.Application.Interfaces;
 
 public interface IPurchaseOrderProcessor
 {
-    Task<PurchaseOrder> ProcessPurchaseOrderAsync(PurchaseOrderRequest request);
+    Task<PurchaseOrder> ProcessPurchaseOrderAsync(PurchaseOrderRequest request, CancellationToken cancellationToken);
 }
