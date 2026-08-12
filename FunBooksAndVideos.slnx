@@ -1,10 +1,10 @@
 <Solution>
   <Folder Name="/Docs/">
-    <File Path="docker.md" />
-    <File Path="entity-framework.md" />
-    <File Path="frontend.md" />
-    <File Path="FunBooksAndVideos.postman_collection.json" />
-    <File Path="README.md" />
+    <File Path="Docs/docker.md" />
+    <File Path="Docs/entity-framework.md" />
+    <File Path="Docs/frontend.md" />
+    <File Path="Docs/FunBooksAndVideos.postman_collection.json" />
+    <File Path="Docs/README.md" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".env" />
