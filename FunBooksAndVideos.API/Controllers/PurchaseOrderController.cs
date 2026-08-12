@@ -1,7 +1,7 @@
 ﻿using FunBooksAndVideos.API.Filters;
-using FunBooksAndVideos.Application.Interfaces;
-using FunBooksAndVideos.Application.Mappers;
-using FunBooksAndVideos.Application.Models;
+using FunBooksAndVideos.Application.PurchaseOrders.Create;
+using FunBooksAndVideos.Application.PurchaseOrders.Mapping;
+using FunBooksAndVideos.Application.PurchaseOrders.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FunBooksAndVideos.API.Controllers
@@ -14,12 +14,12 @@ namespace FunBooksAndVideos.API.Controllers
         ) : ControllerBase
     {
         [HttpPost]
-        [ServiceFilter(typeof(ValidationFilter<PurchaseOrderRequest>))]
+        [ServiceFilter(typeof(ValidationFilter<CreatePurchaseOrderRequest>))]
         public async Task<IActionResult> CreatePurchaseOrder(
-            [FromBody] PurchaseOrderRequest request, 
+            [FromBody] CreatePurchaseOrderRequest request, 
             CancellationToken cancellationToken)
         {
-            var order = await orderProcessor.ProcessPurchaseOrderAsync(request, cancellationToken);
+            var order = await orderProcessor.CreatePurchaseOrderAsync(request, cancellationToken);
 
             return CreatedAtAction(
                 nameof(CreatePurchaseOrder),

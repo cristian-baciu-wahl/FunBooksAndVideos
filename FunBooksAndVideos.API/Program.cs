@@ -2,58 +2,51 @@ using FluentValidation;
 using FunBooksAndVideos.API.Exceptions;
 using FunBooksAndVideos.API.Filters;
 using FunBooksAndVideos.API.Validators;
-using FunBooksAndVideos.Application.Config;
-using FunBooksAndVideos.Application.Engines;
-using FunBooksAndVideos.Application.Interfaces;
-using FunBooksAndVideos.Application.Models;
-using FunBooksAndVideos.Application.Processors;
-using FunBooksAndVideos.Application.Services;
-using FunBooksAndVideos.Infrastructure.Repositories;
+using FunBooksAndVideos.Application.DependencyInjection;
+using FunBooksAndVideos.Application.PurchaseOrders.Create;
+using FunBooksAndVideos.Application.PurchaseOrders.Services;
+using FunBooksAndVideos.Application.PurchaseOrders.Ports;
+using FunBooksAndVideos.Application.BusinessRules;
+using FunBooksAndVideos.Application.BusinessRules.Ports;
+using FunBooksAndVideos.Infrastructure.Fullfilment;
 using FunBooksAndVideos.Infrastructure.Persistence;
-using FunBooksAndVideos.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
-using FunBooksAndVideos.Infrastructure.Publishers;
+using FunBooksAndVideos.Infrastructure.Persistence.Repositories;
+using FunBooksAndVideos.Infrastructure.Persistence.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Register core services
-builder.Services.AddScoped<IShippingSlipService, ShippingSlipService>();
-
 // Register the in-memory shipping slip publisher as a singleton for persistence across requests
-builder.Services.AddSingleton<IShippingSlipPublisher, ShippingSlipPublisher>();
+builder.Services.AddSingleton<IShippingSlipPublisher, InMemoryShippingSlipPublisher>();
+
+// Register services
 builder.Services.AddScoped<IShippingSlipService, ShippingSlipService>();
-
-builder.Services.AddScoped<ICustomerMembershipService, EfCustomerMembershipService>();
-builder.Services.AddScoped<IPurchaseOrderRepository, EfPurchaseOrderRepository>();
-
+builder.Services.AddScoped<ICustomerMembershipService, CustomerMembershipService>();
+builder.Services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 
 // Register all validators and filters
 builder.Services.AddValidatorsFromAssemblyContaining<PurchaseOrderRequestValidator>();
-builder.Services.AddScoped<ValidationFilter<PurchaseOrderRequest>>();
+builder.Services.AddScoped<ValidationFilter<CreatePurchaseOrderRequest>>();
 
-// Register rule engine
+// Register processor, rule engine and rules
+builder.Services.AddScoped<IPurchaseOrderProcessor, PurchaseOrderProcessor>();
 builder.Services.AddScoped<IBusinessRuleEngine, BusinessRuleEngine>();
-
-// Register business rules as strategies from configuration extension
 builder.Services.AddBusinessRules();
 
-// Register processor
-builder.Services.AddScoped<IPurchaseOrderProcessor, PurchaseOrderProcessor>();
-
-// Add global exception handling and problem details middleware
+// Register global exception handling
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-// Add framework health check for API -> AppDbContext -> SQL Server
+// Register framework health check for API -> AppDbContext -> SQL Server flow
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
 
-// Configure CORS to Allow All - for production apps, we want to limit this 
+// Configure CORS to Allow All only in Development for testing purposes.
+// For production apps, we want to limit this to specific origins, methods, and headers.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -65,7 +58,6 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Add DB context and connection string
 if (builder.Environment.IsDevelopment())
 {
     builder.Configuration.AddUserSecrets<Program>();
@@ -76,7 +68,6 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(conn
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -87,16 +78,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
-
-// Remove HTTPS redirection for Docker testing
-// app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
-
 app.MapHealthChecks("/health");
 
 app.Run();
-
-public partial class Program { }

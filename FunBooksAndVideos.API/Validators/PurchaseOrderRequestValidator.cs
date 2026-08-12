@@ -1,10 +1,10 @@
 ﻿using FluentValidation;
-using FunBooksAndVideos.Application.Models;
-using FunBooksAndVideos.Domain;
+using FunBooksAndVideos.Application.PurchaseOrders.Create;
+using FunBooksAndVideos.Domain.Customers;
 
 namespace FunBooksAndVideos.API.Validators;
 
-public class PurchaseOrderRequestValidator: AbstractValidator<PurchaseOrderRequest>
+public class PurchaseOrderRequestValidator: AbstractValidator<CreatePurchaseOrderRequest>
 {
     public PurchaseOrderRequestValidator()
     {
@@ -55,7 +55,7 @@ public class PurchaseOrderRequestValidator: AbstractValidator<PurchaseOrderReque
             out _);
     }
 
-    private static bool ContainExactlyOnePurchaseType(PurchaseOrderItemRequest item)
+    private static bool ContainExactlyOnePurchaseType(CreatePurchaseOrderItemRequest item)
     {
         var hasProduct = item.ProductId.HasValue;
         var hasMembership = item.MembershipType is not null;

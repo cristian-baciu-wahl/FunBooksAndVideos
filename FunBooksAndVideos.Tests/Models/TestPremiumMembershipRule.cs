@@ -1,5 +1,7 @@
-﻿using FunBooksAndVideos.Application.Interfaces;
-using FunBooksAndVideos.Domain;
+﻿using FunBooksAndVideos.Application.BusinessRules;
+using FunBooksAndVideos.Application.BusinessRules.Ports;
+using FunBooksAndVideos.Domain.Customers;
+using FunBooksAndVideos.Domain.PurchaseOrders;
 
 namespace FunBooksAndVideos.Tests.Models
 {

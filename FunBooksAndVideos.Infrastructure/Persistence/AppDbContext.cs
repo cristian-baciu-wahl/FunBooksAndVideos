@@ -1,4 +1,6 @@
-using FunBooksAndVideos.Domain;
+using FunBooksAndVideos.Domain.Catalog;
+using FunBooksAndVideos.Domain.Customers;
+using FunBooksAndVideos.Domain.PurchaseOrders;
 using Microsoft.EntityFrameworkCore;
 
 namespace FunBooksAndVideos.Infrastructure.Persistence;

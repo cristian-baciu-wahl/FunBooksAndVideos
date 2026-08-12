@@ -1,10 +1,10 @@
 <Solution>
-  <Folder Name="/Documentation/">
-    <File Path="DockerCommands.txt" />
-    <File Path="EF_Commands.txt" />
-    <File Path="FE_Commands.txt" />
-    <File Path="FunBooksAndVideos API Tests.json" />
-    <File Path="README.txt" />
+  <Folder Name="/Docs/">
+    <File Path="docker.md" />
+    <File Path="entity-framework.md" />
+    <File Path="frontend.md" />
+    <File Path="FunBooksAndVideos.postman_collection.json" />
+    <File Path="README.md" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".env" />
